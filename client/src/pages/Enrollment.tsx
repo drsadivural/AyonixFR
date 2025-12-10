@@ -90,11 +90,18 @@ export default function Enrollment() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
-        setIsCapturing(true);
         
-        // Start landmark detection loop
+        // Wait for video to load metadata, then play
         videoRef.current.onloadedmetadata = () => {
-          detectLandmarksLoop();
+          if (videoRef.current) {
+            videoRef.current.play().then(() => {
+              setIsCapturing(true);
+              detectLandmarksLoop();
+            }).catch(err => {
+              console.error('Error playing video:', err);
+              toast.error('Failed to start video stream');
+            });
+          }
         };
       }
     } catch (error) {
@@ -270,6 +277,7 @@ export default function Enrollment() {
     return () => {
       stopCamera();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enrollmentMethod]);
 
   return (
@@ -306,7 +314,7 @@ export default function Enrollment() {
               <TabsContent value="camera" className="space-y-4">
                 <div className="relative w-full h-[600px] bg-muted rounded-lg overflow-hidden">
                   {!isCapturing && !capturedImage && (
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
                       <div className="text-center">
                         <Camera className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
                         <p className="text-sm text-muted-foreground">Starting camera...</p>
@@ -314,21 +322,17 @@ export default function Enrollment() {
                     </div>
                   )}
                   
-                  {isCapturing && (
-                    <>
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-cover"
-                      />
-                      <canvas
-                        ref={overlayCanvasRef}
-                        className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                        style={{ mixBlendMode: 'screen' }}
-                      />
-                    </>
-                  )}
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    className={`w-full h-full object-cover ${!isCapturing || capturedImage ? 'hidden' : ''}`}
+                  />
+                  <canvas
+                    ref={overlayCanvasRef}
+                    className={`absolute top-0 left-0 w-full h-full pointer-events-none ${!isCapturing || capturedImage ? 'hidden' : ''}`}
+                    style={{ mixBlendMode: 'screen' }}
+                  />
                   
                   {capturedImage && (
                     <img src={capturedImage} alt="Captured" className="w-full h-full object-cover" />

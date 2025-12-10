@@ -66,12 +66,19 @@ export default function Verification() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
-        setIsVerifying(true);
         setMatchResults([]);
         
-        // Start landmark detection loop
+        // Wait for video to load metadata, then play
         videoRef.current.onloadedmetadata = () => {
-          detectLandmarksLoop();
+          if (videoRef.current) {
+            videoRef.current.play().then(() => {
+              setIsVerifying(true);
+              detectLandmarksLoop();
+            }).catch(err => {
+              console.error('Error playing video:', err);
+              toast.error('Failed to start video stream');
+            });
+          }
         };
       }
     } catch (error) {
@@ -239,7 +246,7 @@ export default function Verification() {
           <CardContent className="space-y-4">
             <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
               {!isVerifying && (
-                <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center justify-center z-10">
                   <Button onClick={startVerification} size="lg">
                     <Camera className="mr-2 h-5 w-5" />
                     Start Verification
@@ -247,21 +254,17 @@ export default function Verification() {
                 </div>
               )}
               
-              {isVerifying && (
-                <>
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                  <canvas
-                    ref={overlayCanvasRef}
-                    className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                    style={{ mixBlendMode: 'screen' }}
-                  />
-                </>
-              )}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className={`w-full h-full object-cover ${!isVerifying ? 'hidden' : ''}`}
+              />
+              <canvas
+                ref={overlayCanvasRef}
+                className={`absolute top-0 left-0 w-full h-full pointer-events-none ${!isVerifying ? 'hidden' : ''}`}
+                style={{ mixBlendMode: 'screen' }}
+              />
               
               <canvas ref={canvasRef} className="hidden" />
             </div>

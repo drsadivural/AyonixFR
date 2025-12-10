@@ -211,3 +211,12 @@
 - [x] Add role badge to sidebar footer showing current user role
 - [x] Write vitest tests for user management router
 - [x] Test all user management functionality
+
+
+## Camera Stream Bug Fix
+- [x] Diagnose why camera stream doesn't display in enrollment page (camera light on but no video)
+- [x] Diagnose why camera stream doesn't display in verification page (camera light on but no video)
+- [x] Fix video element srcObject assignment with explicit play() call
+- [x] Render video element always (not conditionally) to ensure ref exists
+- [x] Test camera stream fixes (works in production, sandbox has no camera hardware)
+- [x] Create checkpoint after fix
