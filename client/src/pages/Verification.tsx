@@ -3,9 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Camera, CheckCircle2, XCircle, User } from 'lucide-react';
+import { Camera, CheckCircle2, XCircle, User, Calendar, MapPin } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
+import { EmotionBadge } from '@/components/EmotionBadge';
+import { VoiceIndicator } from '@/components/VoiceIndicator';
+import { loadEmotionModels, detectEmotion, type EmotionResult } from '@/services/emotionDetection';
+import type { VoiceCommand } from '@/services/voiceRecognition';
 
 export default function Verification() {
   const [isVerifying, setIsVerifying] = useState(false);
@@ -13,7 +17,10 @@ export default function Verification() {
   const [matchResults, setMatchResults] = useState<any[]>([]);
   const [landmarks, setLandmarks] = useState<Array<{x: number, y: number, z: number}> | null>(null);
   const [voiceComments, setVoiceComments] = useState<Array<{ text: string; timestamp: Date; personName: string }>>([]);
+  const [currentEmotion, setCurrentEmotion] = useState<EmotionResult | null>(null);
+  const [emotionDetectionActive, setEmotionDetectionActive] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const emotionIntervalRef = useRef<number | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -23,6 +30,14 @@ export default function Verification() {
   const [landmarksImageData, setLandmarksImageData] = useState<string | null>(null);
 
   const { data: settings } = trpc.settings.get.useQuery();
+
+  // Load emotion detection models on mount
+  useEffect(() => {
+    loadEmotionModels().catch(err => {
+      console.error('Failed to load emotion models:', err);
+      toast.error('Emotion detection unavailable');
+    });
+  }, []);
 
   const verifyMutation = trpc.verification.verify.useMutation({
     onSuccess: (data) => {
@@ -98,6 +113,9 @@ export default function Verification() {
         videoRef.current.onloadedmetadata = () => {
           if (videoRef.current) {
             videoRef.current.play().then(() => {
+              // Start emotion detection
+              setEmotionDetectionActive(true);
+              startEmotionDetection();
               setIsVerifying(true);
               detectLandmarksLoop();
             }).catch(err => {
@@ -195,6 +213,21 @@ export default function Verification() {
     animationFrameRef.current = requestAnimationFrame(detectLandmarksLoop);
   };
 
+  const startEmotionDetection = () => {
+    if (emotionIntervalRef.current) {
+      clearInterval(emotionIntervalRef.current);
+    }
+    
+    emotionIntervalRef.current = window.setInterval(async () => {
+      if (videoRef.current && emotionDetectionActive) {
+        const emotion = await detectEmotion(videoRef.current);
+        if (emotion) {
+          setCurrentEmotion(emotion);
+        }
+      }
+    }, 500); // Detect every 500ms
+  };
+
   const stopVerification = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -207,6 +240,13 @@ export default function Verification() {
     setIsVerifying(false);
     setLandmarks(null);
     setLandmarksImageData(null);
+    setEmotionDetectionActive(false);
+    setCurrentEmotion(null);
+    
+    if (emotionIntervalRef.current) {
+      clearInterval(emotionIntervalRef.current);
+      emotionIntervalRef.current = null;
+    }
   };
 
   const captureAndVerify = () => {
@@ -235,6 +275,25 @@ export default function Verification() {
     }
   };
 
+  const handleVoiceCommand = (command: VoiceCommand, params?: string) => {
+    switch (command) {
+      case 'start_verification':
+        if (!isVerifying) {
+          startVerification();
+          toast.success('Starting verification...');
+        }
+        break;
+      case 'search_person':
+        if (params) {
+          toast.info(`Searching for: ${params}`);
+          // TODO: Implement search functionality
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
   useEffect(() => {
     return () => {
       stopVerification();
@@ -247,6 +306,9 @@ export default function Verification() {
         <h1 className="text-3xl font-bold">Face Verification</h1>
         <p className="text-muted-foreground">Real-time face matching against enrolled database</p>
       </div>
+
+      {/* Voice Command Indicator */}
+      <VoiceIndicator onCommand={handleVoiceCommand} showHistory={false} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Camera Section */}
@@ -295,6 +357,13 @@ export default function Verification() {
               <canvas ref={canvasRef} className="hidden" />
             </div>
 
+            {/* Emotion Display */}
+            {isVerifying && currentEmotion && (
+              <div className="mb-4">
+                <EmotionBadge emotion={currentEmotion} showDetails={false} />
+              </div>
+            )}
+
             {isVerifying && (
               <div className="flex gap-2">
                 <Button onClick={captureAndVerify} className="flex-1" disabled={verifyMutation.isPending}>
@@ -336,26 +405,70 @@ export default function Verification() {
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Name</p>
-                        <p className="font-medium">{match.name} {match.surname}</p>
+                    <CardContent className="space-y-4">
+                      {/* Profile Photo */}
+                      {match.photoUrl && (
+                        <div className="flex justify-center">
+                          <img 
+                            src={match.photoUrl} 
+                            alt={`${match.name} ${match.surname}`}
+                            className="w-24 h-24 rounded-full object-cover border-4 border-green-500"
+                          />
+                        </div>
+                      )}
+
+                      {/* Personal Info */}
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Name</p>
+                          <p className="font-semibold text-lg">{match.name} {match.surname}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Enrollee ID</p>
+                          <p className="font-mono text-sm">{match.enrolleeId}</p>
+                        </div>
+                        {match.email && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Email</p>
+                            <p className="text-sm">{match.email}</p>
+                          </div>
+                        )}
                       </div>
+
+                      {/* Match Confidence */}
                       <div>
-                        <p className="text-sm text-muted-foreground">Enrollee ID</p>
-                        <p className="font-mono text-sm">{match.enrolleeId}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Confidence</p>
+                        <p className="text-sm text-muted-foreground mb-2">Match Confidence</p>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-muted rounded-full h-2">
+                          <div className="flex-1 bg-muted rounded-full h-3">
                             <div 
-                              className="bg-green-500 h-2 rounded-full transition-all"
+                              className="bg-green-500 h-3 rounded-full transition-all"
                               style={{ width: `${match.confidence}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium">{match.confidence}%</span>
+                          <span className="text-sm font-bold">{match.confidence}%</span>
                         </div>
+                      </div>
+
+                      {/* Metadata */}
+                      <div className="pt-2 border-t space-y-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3 w-3" />
+                          <span>Enrolled: {match.enrolledAt ? new Date(match.enrolledAt).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3 w-3" />
+                          <span>Camera: {cameraSource}</span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 pt-2">
+                        <Button variant="outline" size="sm" className="flex-1">
+                          View Profile
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex-1">
+                          History
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
