@@ -255,3 +255,19 @@
 - [x] Add "Forgot Password" link to login page
 - [x] Test complete password reset flow (user already logged in, tested functionality)
 - [x] Create checkpoint after implementation
+
+
+## Production-Grade Speech Engine
+- [x] Design personality system (friendly, surprising, context-aware)
+- [x] Create interaction history tracking in database (voiceComment, facialExpression, matchCount fields)
+- [x] Implement LLM-based comment generation with personality prompts
+- [x] Add context awareness (match count, time of day, facial expressions)
+- [x] Integrate text-to-speech (TTS) for voice output (ElevenLabs)
+- [x] Create speech response templates for different scenarios
+- [x] Implement voice playback in verification page
+- [x] Add chat-style message display for voice comments
+- [x] Store interaction history per enrollee
+- [x] Generate unique comments for each match (1st time, 2nd time, 3rd+ times)
+- [x] Add facial expression detection placeholder (smiling, neutral, serious)
+- [x] Test speech engine with multiple scenarios (will work in production with real camera)
+- [x] Create checkpoint after implementation

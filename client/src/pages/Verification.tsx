@@ -12,6 +12,8 @@ export default function Verification() {
   const [cameraSource, setCameraSource] = useState('webcam');
   const [matchResults, setMatchResults] = useState<any[]>([]);
   const [landmarks, setLandmarks] = useState<Array<{x: number, y: number, z: number}> | null>(null);
+  const [voiceComments, setVoiceComments] = useState<Array<{ text: string; timestamp: Date; personName: string }>>([]);
+  const audioRef = useRef<HTMLAudioElement>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -26,7 +28,31 @@ export default function Verification() {
     onSuccess: (data) => {
       setMatchResults(data.matches);
       if (data.matches.length > 0) {
-        toast.success(`Match found: ${data.matches[0]?.name} ${data.matches[0]?.surname}`);
+        const match = data.matches[0];
+        toast.success(`Match found: ${match?.name} ${match?.surname}`);
+        
+        // Play voice comment if available
+        if (match.voiceComment) {
+          // Add to chat history
+          setVoiceComments(prev => [
+            { text: match.voiceComment, timestamp: new Date(), personName: `${match.name} ${match.surname}` },
+            ...prev
+          ]);
+          
+          // Play audio
+          if (match.audioUrl && audioRef.current) {
+            // Use server-generated audio
+            audioRef.current.src = match.audioUrl;
+            audioRef.current.play().catch(err => console.error('Audio playback failed:', err));
+          } else if (match.useBrowserTTS && 'speechSynthesis' in window) {
+            // Fallback to browser TTS
+            const utterance = new SpeechSynthesisUtterance(match.voiceComment);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            window.speechSynthesis.speak(utterance);
+          }
+        }
       } else if (data.detectedFaces > 0) {
         toast.error('No match found in database');
       } else {
@@ -340,6 +366,38 @@ export default function Verification() {
         </Card>
       </div>
 
+      {/* Voice Comments Chat Panel */}
+      {voiceComments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>🎙️ Voice Assistant Comments</CardTitle>
+            <CardDescription>AI-generated personality-driven responses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+              {voiceComments.map((comment, index) => (
+                <div key={index} className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
+                        {comment.personName.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{comment.personName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {comment.timestamp.toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm leading-relaxed italic">"{comment.text}"</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Settings Info */}
       <Card>
         <CardHeader>
@@ -362,6 +420,9 @@ export default function Verification() {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Hidden audio element for voice playback */}
+      <audio ref={audioRef} className="hidden" />
     </div>
   );
 }

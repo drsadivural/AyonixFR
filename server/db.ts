@@ -371,6 +371,33 @@ export async function createRecognitionLog(log: InsertRecognitionLog): Promise<R
   return inserted[0];
 }
 
+export async function getRecentRecognitionLogs(enrolleeId: number, limit: number = 3): Promise<RecognitionLog[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(recognitionLogs)
+    .where(and(
+      eq(recognitionLogs.enrolleeId, enrolleeId),
+      eq(recognitionLogs.matched, true)
+    ))
+    .orderBy(desc(recognitionLogs.createdAt))
+    .limit(limit);
+}
+
+export async function getEnrolleeMatchCount(enrolleeId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const result = await db.select({ count: sql<number>`count(*)` })
+    .from(recognitionLogs)
+    .where(and(
+      eq(recognitionLogs.enrolleeId, enrolleeId),
+      eq(recognitionLogs.matched, true)
+    ));
+  
+  return Number(result[0]?.count || 0);
+}
+
 export async function getRecognitionLogs(filters?: {
   enrolleeId?: number;
   matched?: boolean;

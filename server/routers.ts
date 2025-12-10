@@ -10,6 +10,8 @@ import * as db from "./db";
 import { findBestMatch, verifyFaces, validateEmbedding } from './faceRecognition';
 import { extractSingleFaceEmbedding, extractMultipleFaceEmbeddings, get3DLandmarks } from './pythonFaceService';
 import { assessFaceQuality } from './faceQuality';
+import { generateVoiceComment, getTimeOfDay, getPreviousComments, getMatchCount, detectFacialExpression } from './speechEngine';
+import { textToSpeech, useBrowserTTS } from './textToSpeech';
 import { TRPCError } from "@trpc/server";
 import { hasPermission, requireAdmin, requireOperatorOrAdmin, type UserRole } from './permissions';
 import bcrypt from 'bcryptjs';
@@ -416,24 +418,61 @@ export const appRouter = router({
           input.threshold || 0.6
         );
 
-        // Log verification events
+        // Log verification events and generate voice comments
         for (const match of result.matches) {
+          // Generate personality-driven voice comment
+          const matchCount = await getMatchCount(match.enrolleeId);
+          const previousComments = await getPreviousComments(match.enrolleeId, 3);
+          const facialExpression = detectFacialExpression();
+          const timeOfDay = getTimeOfDay();
+          
+          const voiceComment = await generateVoiceComment({
+            enrolleeName: match.name.split(' ')[0], // Use first name only
+            matchCount,
+            facialExpression,
+            timeOfDay,
+            confidence: match.confidence,
+            previousComments,
+          });
+          
+          // Generate speech audio (if ElevenLabs is configured)
+          let audioUrl: string | undefined;
+          let audioKey: string | undefined;
+          
+          if (!useBrowserTTS()) {
+            try {
+              const tts = await textToSpeech({ text: voiceComment });
+              audioUrl = tts.audioUrl;
+              audioKey = tts.audioKey;
+            } catch (error) {
+              console.error('[Verification] TTS failed, will use browser TTS:', error);
+            }
+          }
+          
           await db.createRecognitionLog({
             enrolleeId: match.enrolleeId,
             matchConfidence: match.confidence,
             snapshotUrl: '',
             snapshotKey: '',
             matched: true,
+            voiceComment,
+            facialExpression,
+            matchCount,
             verifiedBy: 1, // System user
             cameraSource: input.cameraSource,
             detectedFaces: result.detectedFaces,
           });
           
+          // Add voice comment and audio URL to match result
+          (match as any).voiceComment = voiceComment;
+          (match as any).audioUrl = audioUrl;
+          (match as any).useBrowserTTS = useBrowserTTS();
+          
           await db.createEvent({
             userId: 1, // System user
             eventType: 'match',
             title: `Match found: ${match.name} ${match.surname}`,
-            description: `Confidence: ${match.confidence}%`,
+            description: `Confidence: ${match.confidence}% | Comment: "${voiceComment}"`,
             cameraSource: input.cameraSource,
             enrolleeId: match.enrolleeId,
           });

@@ -58,6 +58,9 @@ export const recognitionLogs = mysqlTable("recognition_logs", {
   cameraSource: varchar("cameraSource", { length: 255 }).notNull(),
   detectedFaces: int("detectedFaces").notNull().default(0),
   matched: boolean("matched").notNull().default(false),
+  voiceComment: text("voiceComment"), // AI-generated comment spoken to user
+  facialExpression: varchar("facialExpression", { length: 50 }), // smiling, neutral, serious, etc.
+  matchCount: int("matchCount").default(0), // How many times this person has been matched before
   verifiedBy: int("verifiedBy").notNull(), // user.id who performed verification
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
