@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 import FaceQualityIndicator from '@/components/FaceQualityIndicator';
+import { speak } from '@/services/voiceAssistant';
 
 type EnrollmentMethod = 'camera' | 'photo' | 'mobile';
 
@@ -45,6 +46,7 @@ export default function Enrollment() {
   const enrollMutation = trpc.enrollees.enroll.useMutation({
     onSuccess: () => {
       toast.success('Enrollment successful!');
+      speak('Person registered successfully! Welcome aboard!');
       setDuplicateWarning([]);
       setShowDuplicateDialog(false);
       // Reset form

@@ -19,6 +19,7 @@ import UserManagement from "@/pages/UserManagement";
 import VoiceSettings from "@/pages/VoiceSettings";
 import APIKeysSettings from "@/pages/APIKeysSettings";
 import ChatAssistant from "@/components/ChatAssistant";
+import { GlobalVoiceAssistant } from "@/components/GlobalVoiceAssistant";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -81,6 +82,7 @@ function AuthenticatedApp() {
         </main>
         <ChatAssistant />
       </div>
+      <GlobalVoiceAssistant />
     </SidebarProvider>
   );
 }
