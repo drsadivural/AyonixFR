@@ -66,6 +66,6 @@
 - [x] Test face verification with multiple faces
 - [x] Test bilingual voice commands
 - [x] Test LLM chat interactions
-- [ ] Create checkpoint
+- [x] Create checkpoint
 - [ ] Create GitHub repository
 - [ ] Push complete code to GitHub
