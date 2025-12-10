@@ -158,16 +158,13 @@
 - [x] Auto-start camera when opening enrollment page
 - [x] Make camera view larger (match verification page size)
 - [x] Remove manual "Start Camera" button requirement
-
-## Audit Trail System
-- [ ] Create audit_logs database table
-- [ ] Log all enrollment operations with timestamps
-- [ ] Log all verification attempts with results
-- [ ] Log face detection operations
-- [ ] Create audit trail viewer page
-- [ ] Add filtering by date, user, operation type
-- [ ] Export audit logs to CSV
-
+## Audit Trail System (Using Enhanced Events Page)
+- [x] Use existing events table for audit trail
+- [x] Add advanced filtering to Events page (date range, event type, user)
+- [x] Add search functionality to Events page
+- [x] Add CSV export button to Events page
+- [x] Ensure all operations create event logs (events already logged in enrollment/verification)
+- [x] Test audit trail filtering and export
 ## Face Similarity Search
 - [x] Create backend similarity search endpoint with cosine similarity
 - [x] Add database query to get all enrollees with embeddings

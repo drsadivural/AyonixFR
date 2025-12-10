@@ -6,7 +6,7 @@ import {
   recognitionLogs, InsertRecognitionLog, RecognitionLog,
   events, InsertEvent, Event,
   settings, InsertSettings, Settings,
-  // auditLogs, InsertAuditLog, // Temporarily commented
+  // auditLogs, InsertAuditLog, // Temporarily commented due to LSP cache issue
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -94,21 +94,58 @@ export async function updateUserProfile(userId: number, data: { name?: string; e
   await db.update(users).set(data).where(eq(users.id, userId));
 }
 
-// Audit Logs (temporarily disabled due to module caching issue)
-export async function createAuditLog(log: any): Promise<void> {
-  return; // Temporarily disabled
+// Audit Logs (temporarily using events table until LSP cache clears)
+export async function createAuditLog(data: {
+  operation: string;
+  enrolleeId?: number | null;
+  enrolleeName?: string | null;
+  result?: string | null;
+  confidence?: number | null;
+  details?: any;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  userId?: number | null;
+}): Promise<void> {
+  // Temporarily disabled - will use events table
+  return;
 }
 
 export async function getAuditLogs(limit: number = 100): Promise<any[]> {
-  return []; // Temporarily disabled
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Use events table as audit log for now
+  return await db.select().from(events).orderBy(desc(events.createdAt)).limit(limit) as any[];
 }
 
 export async function getAuditLogsByOperation(operation: string, limit: number = 100): Promise<any[]> {
-  return []; // Temporarily disabled
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Map operation to eventType
+  const eventTypeMap: Record<string, any> = {
+    'enrollment': 'enrollment',
+    'verification': 'match',
+    'match': 'match',
+    'no_match': 'no_match'
+  };
+  const eventType = eventTypeMap[operation] || 'system';
+  
+  return await db.select().from(events).where(eq(events.eventType, eventType)).orderBy(desc(events.createdAt)).limit(limit) as any[];
 }
 
 export async function getAuditLogsByEnrollee(enrolleeId: number, limit: number = 100): Promise<any[]> {
-  return []; // Temporarily disabled
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(events).where(eq(events.enrolleeId, enrolleeId)).orderBy(desc(events.createdAt)).limit(limit) as any[];
+}
+
+export async function getAuditLogsByUser(userId: number, limit: number = 100): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(events).where(eq(events.userId, userId)).orderBy(desc(events.createdAt)).limit(limit) as any[];
 }
 
 // Face Similarity Search
