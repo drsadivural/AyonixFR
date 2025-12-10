@@ -465,3 +465,52 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [ ] Test verification with multiple enrollees
 - [ ] Verify all API integrations work in production
 - [ ] Create checkpoint after all fixes
+
+
+## Improved Enrollee View
+- [x] Redesign enrollee list with grid layout and thumbnails
+- [x] Add list view toggle (grid/list)
+- [x] Implement enrollee detail view modal
+- [x] Add modify button to edit enrollee information
+- [x] Add delete button for individual enrollees
+- [x] Add "Delete All" button with confirmation dialog
+- [ ] Implement photo update functionality in modify mode
+- [ ] Add voice sample update in modify mode
+- [ ] Show enrollment history in detail view
+- [x] Add search and filter functionality
+
+## Comprehensive Events View
+- [x] Redesign events page with better layout
+- [x] Add event type filtering (enrollment, verification, match, no-match)
+- [x] Add date range picker for event filtering
+- [x] Add search by person name
+- [x] Show event thumbnails/snapshots
+- [x] Event details shown inline (no modal needed)
+- [x] Scrollable list for large event lists (max-height with overflow)
+- [x] Add export events to CSV functionality
+- [x] Show event statistics (filtered count / total count)
+
+## Enhanced Photo Enrollment
+- [ ] Add face detection visualization with bounding box
+- [ ] Show face landmarks overlay on detected face
+- [ ] Add face quality indicators (lighting, angle, clarity)
+- [ ] Show confidence score for detected face
+- [ ] Add preview of cropped face before enrollment
+- [ ] Implement multiple face detection warning
+- [ ] Add face size validation (too small/too large)
+
+## iPhone Continuity Camera
+- [ ] Research Continuity Camera API integration
+- [ ] Add "Use iPhone Camera" button in enrollment
+- [ ] Implement camera selection for Continuity Camera
+- [ ] Test iPhone camera integration with MacBook
+- [ ] Add fallback for non-Apple devices
+- [ ] Add instructions for enabling Continuity Camera
+
+## Testing & Checkpoint
+- [ ] Test enrollee list and detail views
+- [ ] Test modify and delete functionality
+- [ ] Test events filtering and search
+- [ ] Test photo enrollment enhancements
+- [ ] Test iPhone Continuity Camera
+- [ ] Create checkpoint after all implementations

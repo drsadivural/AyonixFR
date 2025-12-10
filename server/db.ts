@@ -344,6 +344,13 @@ export async function deleteEnrollee(id: number): Promise<void> {
   await db.delete(enrollees).where(eq(enrollees.id, id));
 }
 
+export async function deleteAllEnrollees() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(enrollees);
+}
+
 export async function searchEnrollees(query: string): Promise<Enrollee[]> {
   const db = await getDb();
   if (!db) return [];

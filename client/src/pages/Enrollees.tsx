@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
-import { Search, Mail, Phone, MapPin, Instagram, Edit, Trash2, Loader2 } from "lucide-react";
+import { Search, Mail, Phone, MapPin, Instagram, Edit, Trash2, Loader2, Grid3x3, List, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
@@ -15,6 +15,8 @@ export default function Enrollees() {
   const [selectedEnrollee, setSelectedEnrollee] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   const [editForm, setEditForm] = useState({
     name: '',
@@ -27,6 +29,17 @@ export default function Enrollees() {
 
   const { data: enrollees, isLoading, refetch } = trpc.enrollees.list.useQuery();
   
+  const deleteAllMutation = trpc.enrollees.deleteAll.useMutation({
+    onSuccess: () => {
+      toast.success('All enrollees deleted successfully');
+      setDeleteAllDialogOpen(false);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete all: ${error.message}`);
+    },
+  });
+
   const deleteMutation = trpc.enrollees.delete.useMutation({
     onSuccess: () => {
       toast.success('Enrollee deleted successfully');
@@ -100,13 +113,22 @@ export default function Enrollees() {
             Manage registered people in the system
           </p>
         </div>
-        <Button onClick={() => navigate('/enrollment')}>
-          Enroll New Person
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate('/enrollment')}>
+            Enroll New Person
+          </Button>
+          {enrollees && enrollees.length > 0 && (
+            <Button variant="destructive" onClick={() => setDeleteAllDialogOpen(true)}>
+              <Trash className="mr-2 h-4 w-4" />
+              Delete All
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="relative">
+      {/* Search and View Toggle */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search by name, surname, or email..."
@@ -114,10 +136,28 @@ export default function Enrollees() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
         />
+        </div>
+        <div className="flex gap-1 border rounded-md p-1">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+          >
+            <Grid3x3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      {/* Grid View */}
+      {/* Enrollees Display */}
       {filteredEnrollees && filteredEnrollees.length > 0 ? (
+        viewMode === 'grid' ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredEnrollees.map((enrollee) => (
             <Card key={enrollee.id} className="card-hover cursor-pointer" onClick={() => setSelectedEnrollee(enrollee)}>
@@ -143,6 +183,37 @@ export default function Enrollees() {
             </Card>
           ))}
         </div>
+        ) : (
+          <div className="space-y-2">
+            {filteredEnrollees.map((enrollee) => (
+              <Card key={enrollee.id} className="card-hover cursor-pointer" onClick={() => setSelectedEnrollee(enrollee)}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={enrollee.thumbnailUrl}
+                      alt={`${enrollee.name} ${enrollee.surname}`}
+                      className="w-16 h-16 object-cover rounded-lg"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg">
+                        {enrollee.name} {enrollee.surname}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">ID: {enrollee.id}</p>
+                      {enrollee.email && (
+                        <p className="text-sm text-muted-foreground truncate">{enrollee.email}</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">
+                        Enrolled: {new Date(enrollee.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )
       ) : (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
@@ -315,6 +386,25 @@ export default function Enrollees() {
             <Button variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending}>
               {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete All Confirmation Dialog */}
+      <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Delete All</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete ALL enrollees? This will permanently remove {enrollees?.length} enrollee(s) from the system. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteAllDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => deleteAllMutation.mutate()} disabled={deleteAllMutation.isPending}>
+              {deleteAllMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete All
             </Button>
           </DialogFooter>
         </DialogContent>

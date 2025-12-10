@@ -359,6 +359,30 @@ export const appRouter = router({
         await db.deleteEnrollee(input.id);
         return { success: true };
       }),
+
+    deleteAll: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        // Check permission - only admins can delete all
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Only administrators can delete all enrollees',
+          });
+        }
+        
+        await db.deleteAllEnrollees();
+        
+        // Log event
+        await db.createEvent({
+          userId: ctx.user.id,
+          eventType: 'system',
+          title: 'All enrollees deleted',
+          description: `Admin ${ctx.user.name} deleted all enrollees from the system`,
+          cameraSource: 'system',
+        });
+        
+        return { success: true };
+      }),
   }),
 
   // ============= VERIFICATION =============
