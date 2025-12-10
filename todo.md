@@ -76,3 +76,16 @@
 - [x] Update backend to handle face embeddings from client
 - [x] Test deployment without native dependencies
 - [x] Create new checkpoint and push to GitHub
+
+## InsightFace/ArcFace Implementation (MediaPipe Alternative)
+- [x] Install MediaPipe and OpenCV Python libraries
+- [x] Create Python backend service for face detection with MediaPipe
+- [x] Implement face embedding extraction from 3D landmarks
+- [x] Add image preprocessing (noise reduction, lighting optimization, contrast enhancement)
+- [x] Implement 3D facial landmark detection (468 points with MediaPipe Face Mesh)
+- [x] Create Node.js wrapper for Python face service
+- [x] Update backend routers to use Python face service
+- [x] Update frontend to remove mock embeddings
+- [x] Add real-time 3D landmark visualization on video stream
+- [x] Test accuracy with real face images
+- [x] Update GitHub repository with production implementation

@@ -68,12 +68,9 @@ export default function Verification() {
         ctx.drawImage(video, 0, 0);
         const imageData = canvas.toDataURL('image/jpeg');
         
-        // Generate face embedding (using mock for now, replace with actual face-api.js in production)
-        const faceEmbeddings = [generateMockEmbedding()];
-        
+        // Face embeddings will be extracted by Python service on the backend
         verifyMutation.mutate({
           imageBase64: imageData,
-          faceEmbeddings,
           cameraSource,
           threshold: settings?.matchThreshold ? settings.matchThreshold / 100 : 0.75,
         });

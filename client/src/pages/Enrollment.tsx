@@ -113,13 +113,10 @@ export default function Enrollment() {
       return;
     }
 
-    // Generate face embedding (using mock for now, replace with actual face-api.js in production)
-    const faceEmbedding = generateMockEmbedding();
-    
+    // Face embedding will be extracted by Python service on the backend
     enrollMutation.mutate({
       ...formData,
       imageBase64: capturedImage,
-      faceEmbedding,
       enrollmentMethod,
     });
   };

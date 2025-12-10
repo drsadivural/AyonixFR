@@ -7,7 +7,8 @@ import { invokeLLM } from "./_core/llm";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { storagePut } from "./storage";
 import * as db from "./db";
-import { findBestMatch, verifyFaces, validateEmbedding } from "./faceRecognition";
+import { findBestMatch, verifyFaces, validateEmbedding } from './faceRecognition';
+import { extractSingleFaceEmbedding, extractMultipleFaceEmbeddings, get3DLandmarks } from './pythonFaceService';
 import { TRPCError } from "@trpc/server";
 
 export const appRouter = router({
@@ -49,15 +50,17 @@ export const appRouter = router({
         address: z.string().optional(),
         instagram: z.string().optional(),
         imageBase64: z.string(),
-        faceEmbedding: z.array(z.number()),
         enrollmentMethod: z.enum(['camera', 'upload', 'mobile']),
       }))
       .mutation(async ({ ctx, input }) => {
-        // Validate embedding
-        if (!validateEmbedding(input.faceEmbedding)) {
+        // Extract face embedding using Python service with MediaPipe
+        let faceEmbedding: number[];
+        try {
+          faceEmbedding = await extractSingleFaceEmbedding(input.imageBase64);
+        } catch (error) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Invalid face embedding format (must be 128-dimensional array)',
+            message: error instanceof Error ? error.message : 'Failed to extract face embedding',
           });
         }
 
@@ -82,7 +85,7 @@ export const appRouter = router({
           faceImageUrl: imageUrl,
           faceImageKey: imageKey,
           thumbnailUrl: imageUrl,
-          faceEmbedding: input.faceEmbedding as any,
+          faceEmbedding: faceEmbedding as any,
           enrollmentMethod: input.enrollmentMethod,
           enrolledBy: ctx.user.id,
         });
@@ -127,22 +130,20 @@ export const appRouter = router({
     verify: protectedProcedure
       .input(z.object({
         imageBase64: z.string(),
-        faceEmbeddings: z.array(z.array(z.number())),
         cameraSource: z.string(),
         threshold: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
-        // Validate embeddings
-        for (const embedding of input.faceEmbeddings) {
-          if (!validateEmbedding(embedding)) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: 'Invalid face embedding format',
-            });
-          }
+        // Extract face embeddings using Python service with MediaPipe
+        let faceEmbeddings: number[][];
+        try {
+          faceEmbeddings = await extractMultipleFaceEmbeddings(input.imageBase64);
+        } catch (error) {
+          console.error('Face extraction error:', error);
+          faceEmbeddings = [];
         }
 
-        if (input.faceEmbeddings.length === 0) {
+        if (faceEmbeddings.length === 0) {
           await db.createEvent({
             userId: 1, // System user
             eventType: 'no_match',
@@ -168,7 +169,7 @@ export const appRouter = router({
 
         // Verify faces
         const result = verifyFaces(
-          input.faceEmbeddings,
+          faceEmbeddings,
           enrolledFaces,
           input.threshold || 0.6
         );
@@ -207,6 +208,23 @@ export const appRouter = router({
         }
 
         return result;
+      }),
+    
+    // Get 3D landmarks for visualization
+    getLandmarks: protectedProcedure
+      .input(z.object({
+        imageBase64: z.string(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const landmarks = await get3DLandmarks(input.imageBase64);
+          return landmarks;
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Failed to extract landmarks',
+          });
+        }
       }),
   }),
 
