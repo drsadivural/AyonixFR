@@ -20,7 +20,7 @@ export default function Register() {
       toast.success('Profile completed successfully!');
       setLocation('/dashboard');
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast.error(`Failed to complete profile: ${error.message}`);
     },
   });

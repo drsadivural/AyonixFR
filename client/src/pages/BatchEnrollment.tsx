@@ -116,7 +116,7 @@ export default function BatchEnrollment() {
             address: record.address || '',
             instagram: record.instagram || '',
             imageBase64,
-            enrollmentMethod: 'upload',
+            enrollmentMethod: 'photo',
           });
 
           processResults.push({

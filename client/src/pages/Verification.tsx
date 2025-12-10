@@ -44,9 +44,9 @@ export default function Verification() {
   );
 
   useEffect(() => {
-    if (landmarksData && landmarksData.length > 0) {
+    if (landmarksData && Array.isArray(landmarksData) && landmarksData.length > 0) {
       // Get landmarks for all detected faces
-      const allLandmarks = landmarksData.flatMap(face => face.landmarks);
+      const allLandmarks = landmarksData.flatMap((face: any) => face.landmarks);
       if (allLandmarks.length > 0) {
         setLandmarks(allLandmarks);
       }

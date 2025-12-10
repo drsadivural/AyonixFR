@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, json } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -80,6 +80,23 @@ export const events = mysqlTable("events", {
 
 export type Event = typeof events.$inferSelect;
 export type InsertEvent = typeof events.$inferInsert;
+
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  operation: varchar("operation", { length: 64 }).notNull(), // 'enrollment', 'verification', 'detection', 'deletion'
+  enrolleeId: int("enrolleeId"),
+  enrolleeName: varchar("enrolleeName", { length: 255 }),
+  result: varchar("result", { length: 32 }), // 'success', 'failure', 'match', 'no_match'
+  confidence: decimal("confidence", { precision: 5, scale: 4 }),
+  details: text("details"), // JSON string with additional data
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
 
 /**
  * Settings table - stores system configuration

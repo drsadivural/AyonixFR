@@ -12,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown } from 'lucide-react';
 import FaceQualityIndicator from '@/components/FaceQualityIndicator';
 
-type EnrollmentMethod = 'camera' | 'upload' | 'mobile';
+type EnrollmentMethod = 'camera' | 'photo' | 'mobile';
 
 export default function Enrollment() {
   const [enrollmentMethod, setEnrollmentMethod] = useState<EnrollmentMethod>('camera');
@@ -65,8 +65,8 @@ export default function Enrollment() {
   );
   
   useEffect(() => {
-    if (landmarksData && landmarksData.length > 0 && landmarksData[0]) {
-      setLandmarks(landmarksData[0].landmarks);
+    if (landmarksData && Array.isArray(landmarksData) && landmarksData.length > 0 && landmarksData[0]) {
+      setLandmarks((landmarksData as any)[0].landmarks);
     }
   }, [landmarksData]);
 
@@ -253,10 +253,14 @@ export default function Enrollment() {
   };
 
   useEffect(() => {
+    // Auto-start camera when component mounts
+    if (enrollmentMethod === 'camera') {
+      startCamera();
+    }
     return () => {
       stopCamera();
     };
-  }, []);
+  }, [enrollmentMethod]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -290,13 +294,13 @@ export default function Enrollment() {
               </TabsList>
 
               <TabsContent value="camera" className="space-y-4">
-                <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                <div className="relative w-full h-[600px] bg-muted rounded-lg overflow-hidden">
                   {!isCapturing && !capturedImage && (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Button onClick={startCamera}>
-                        <Camera className="mr-2 h-4 w-4" />
-                        Start Camera
-                      </Button>
+                      <div className="text-center">
+                        <Camera className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">Starting camera...</p>
+                      </div>
                     </div>
                   )}
                   

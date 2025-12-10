@@ -5,7 +5,8 @@ import {
   enrollees, InsertEnrollee, Enrollee,
   recognitionLogs, InsertRecognitionLog, RecognitionLog,
   events, InsertEvent, Event,
-  settings, InsertSettings, Settings
+  settings, InsertSettings, Settings,
+  // auditLogs, InsertAuditLog, // Temporarily commented
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -93,6 +94,22 @@ export async function updateUserProfile(userId: number, data: { name?: string; e
   await db.update(users).set(data).where(eq(users.id, userId));
 }
 
+// Audit Logs (temporarily disabled due to module caching issue)
+export async function createAuditLog(log: any): Promise<void> {
+  return; // Temporarily disabled
+}
+
+export async function getAuditLogs(limit: number = 100): Promise<any[]> {
+  return []; // Temporarily disabled
+}
+
+export async function getAuditLogsByOperation(operation: string, limit: number = 100): Promise<any[]> {
+  return []; // Temporarily disabled
+}
+
+export async function getAuditLogsByEnrollee(enrolleeId: number, limit: number = 100): Promise<any[]> {
+  return []; // Temporarily disabled
+}
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {

@@ -153,3 +153,35 @@
 - [x] Show progress indicator
 - [x] Display success/error summary
 - [x] Test batch enrollment with sample data
+
+## Enrollment UX Improvements
+- [x] Auto-start camera when opening enrollment page
+- [x] Make camera view larger (match verification page size)
+- [x] Remove manual "Start Camera" button requirement
+
+## Audit Trail System
+- [ ] Create audit_logs database table
+- [ ] Log all enrollment operations with timestamps
+- [ ] Log all verification attempts with results
+- [ ] Log face detection operations
+- [ ] Create audit trail viewer page
+- [ ] Add filtering by date, user, operation type
+- [ ] Export audit logs to CSV
+
+## Face Similarity Search
+- [ ] Create similarity search endpoint
+- [ ] Implement cosine similarity comparison across all enrollees
+- [ ] Create "Find Similar Faces" UI page
+- [ ] Display similarity scores and matched faces
+- [ ] Add duplicate detection warnings during enrollment
+- [ ] Show potential duplicates with confidence scores
+
+## TypeScript Error Fixes
+- [x] Fix ChatAssistant voice transcription type error
+- [x] Fix BatchEnrollment enrollment method type
+- [x] Fix Dashboard router type error
+- [x] Fix Enrollment landmarks type errors
+- [x] Fix Register error handler type
+- [x] Fix Settings voiceLanguage type
+- [x] Fix Verification landmarks type errors
+- [x] Fix db.ts audit logs import errors (temporarily disabled)

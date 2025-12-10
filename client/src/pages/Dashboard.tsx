@@ -4,20 +4,22 @@ import { Users, UserCheck, UserX, TrendingUp, Activity } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 export default function Dashboard() {
-  const { data: analytics, isLoading: analyticsLoading } = trpc.analytics.dashboard.useQuery();
+  const { data: enrollmentStats } = trpc.analytics.enrollmentStats.useQuery();
+  const { data: verificationStats } = trpc.analytics.verificationStats.useQuery();
+  const analyticsLoading = false;
   const { data: recentEvents, isLoading: eventsLoading } = trpc.events.list.useQuery({ limit: 5 });
 
   const COLORS = ['oklch(0.623 0.214 259.815)', 'oklch(0.704 0.191 22.216)', 'oklch(0.705 0.015 286.067)'];
 
-  const verificationData = analytics ? [
-    { name: 'Matches', value: analytics.verifications.matches, color: COLORS[0] },
-    { name: 'No Match', value: analytics.verifications.noMatches, color: COLORS[1] },
+  const verificationData = verificationStats ? [
+    { name: 'Matches', value: verificationStats.matches, color: COLORS[0] },
+    { name: 'No Match', value: verificationStats.noMatches, color: COLORS[1] },
   ] : [];
 
-  const enrollmentTrendData = analytics ? [
-    { name: 'This Week', value: analytics.enrollees.thisWeek },
-    { name: 'This Month', value: analytics.enrollees.thisMonth },
-    { name: 'Total', value: analytics.enrollees.total },
+  const enrollmentTrendData = enrollmentStats ? [
+    { name: 'This Week', value: enrollmentStats.thisWeek },
+    { name: 'This Month', value: enrollmentStats.thisMonth },
+    { name: 'Total', value: enrollmentStats.total },
   ] : [];
 
   if (analyticsLoading || eventsLoading) {
@@ -45,9 +47,9 @@ export default function Dashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics?.enrollees.total || 0}</div>
+            <div className="text-2xl font-bold">{enrollmentStats?.total || 0}</div>
             <p className="text-xs text-muted-foreground">
-              +{analytics?.enrollees.thisWeek || 0} this week
+              +{enrollmentStats?.thisMonth || 0} this month
             </p>
           </CardContent>
         </Card>
@@ -58,7 +60,7 @@ export default function Dashboard() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics?.verifications.total || 0}</div>
+            <div className="text-2xl font-bold">{verificationStats?.total || 0}</div>
             <p className="text-xs text-muted-foreground">
               All time verifications
             </p>
@@ -71,9 +73,9 @@ export default function Dashboard() {
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics?.verifications.matches || 0}</div>
+            <div className="text-2xl font-bold">{verificationStats?.matches || 0}</div>
             <p className="text-xs text-muted-foreground">
-              {analytics?.verifications.successRate || 0}% success rate
+              {verificationStats?.successRate || 0}% success rate
             </p>
           </CardContent>
         </Card>
@@ -84,7 +86,7 @@ export default function Dashboard() {
             <UserX className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics?.verifications.noMatches || 0}</div>
+            <div className="text-2xl font-bold">{verificationStats?.noMatches || 0}</div>
             <p className="text-xs text-muted-foreground">
               Unrecognized faces
             </p>

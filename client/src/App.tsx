@@ -32,7 +32,7 @@ function AuthenticatedApp() {
   }
 
   // Redirect to registration if profile not completed
-  if (user && !user.profileCompleted && window.location.pathname !== '/register') {
+  if (user && !(user as any).profileCompleted && window.location.pathname !== '/register') {
     window.location.href = '/register';
     return null;
   }

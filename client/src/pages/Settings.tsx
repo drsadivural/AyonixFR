@@ -24,7 +24,25 @@ export default function Settings() {
     },
   });
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    llmProvider: string;
+    llmApiKey: string;
+    llmModel: string;
+    llmTemperature: number;
+    llmMaxTokens: number;
+    llmSystemPrompt: string;
+    voiceLanguage: 'en' | 'ja';
+    voiceEngine: string;
+    voiceApiKey: string;
+    voiceInputSensitivity: number;
+    voiceOutputSpeed: number;
+    voiceOutputStyle: string;
+    matchThreshold: number;
+    minFaceSize: number;
+    faceTrackingSmoothing: number;
+    multiFaceMatch: boolean;
+    databaseStorageLocation: string;
+  }>({
     // LLM Settings
     llmProvider: 'openai',
     llmApiKey: '',
@@ -46,6 +64,7 @@ export default function Settings() {
     minFaceSize: 80,
     faceTrackingSmoothing: 50,
     multiFaceMatch: true,
+    databaseStorageLocation: '/var/lib/ayonix/faces',
   });
 
   useEffect(() => {
@@ -57,7 +76,7 @@ export default function Settings() {
         llmTemperature: settings.llmTemperature || 70,
         llmMaxTokens: settings.llmMaxTokens || 2000,
         llmSystemPrompt: settings.llmSystemPrompt || '',
-        voiceLanguage: settings.voiceLanguage || 'en',
+        voiceLanguage: (settings.voiceLanguage as 'en' | 'ja') || 'en',
         voiceEngine: settings.voiceEngine || 'whisper',
         voiceApiKey: (settings as any).voiceApiKey || '',
         voiceInputSensitivity: settings.voiceInputSensitivity || 50,
@@ -67,6 +86,7 @@ export default function Settings() {
         minFaceSize: settings.minFaceSize || 80,
         faceTrackingSmoothing: settings.faceTrackingSmoothing || 50,
         multiFaceMatch: settings.multiFaceMatch ?? true,
+        databaseStorageLocation: (settings as any).databaseStorageLocation || '/var/lib/ayonix/faces',
       });
     }
   }, [settings]);
@@ -205,7 +225,7 @@ export default function Settings() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="voice-language">Language</Label>
-                <Select value={formData.voiceLanguage} onValueChange={(v) => setFormData({ ...formData, voiceLanguage: v })}>
+                <Select value={formData.voiceLanguage} onValueChange={(v) => setFormData({ ...formData, voiceLanguage: v as 'en' | 'ja' })}>
                   <SelectTrigger id="voice-language">
                     <SelectValue />
                   </SelectTrigger>

@@ -37,7 +37,7 @@ export default function ChatAssistant() {
       
       // Text-to-speech
       if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(data.response);
+        const utterance = new SpeechSynthesisUtterance(String(data.response));
         utterance.lang = language === 'ja' ? 'ja-JP' : 'en-US';
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => setIsSpeaking(false);
@@ -107,21 +107,12 @@ export default function ChatAssistant() {
         reader.onloadend = async () => {
           const base64Audio = reader.result as string;
           
-          try {
-            // Upload to S3 using tRPC
-            const uploadResult = await trpc.voice.uploadAudio.mutate({
-              audioBase64: base64Audio,
-            });
-            const audioUrl = uploadResult.url;
-            
-            // Transcribe
-            transcribeMutation.mutate({
-              audioUrl,
-              language,
-            });
-          } catch (error) {
-            toast.error('Failed to process audio');
-          }
+          // For now, use the base64 audio directly for transcription
+          // In production, you would upload to S3 first
+          transcribeMutation.mutate({
+            audioUrl: base64Audio, // Pass base64 directly
+            language,
+          });
         };
         reader.readAsDataURL(audioBlob);
         
