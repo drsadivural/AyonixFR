@@ -59,6 +59,14 @@ export const VOICE_COMMANDS: VoiceCommand[] = [
   { pattern: /(?:enable|turn\s*on)\s*voice/i, action: 'enable_voice', description: 'Enable voice assistant' },
   { pattern: /(?:disable|turn\s*off|mute)\s*voice/i, action: 'disable_voice', description: 'Disable voice assistant' },
   { pattern: /(?:read|speak)\s*(?:the\s*)?menu/i, action: 'read_menu', description: 'Read navigation menu' },
+  
+  // Voice Shortcuts (Combined Actions)
+  { pattern: /enroll\s+(.+)/i, action: 'shortcut_enroll_person', description: 'Quick enroll person with name' },
+  { pattern: /verify\s*now/i, action: 'shortcut_verify_now', description: 'Quick start verification' },
+  { pattern: /(?:find|search)\s+(.+)/i, action: 'shortcut_search', description: 'Quick search enrollee' },
+  { pattern: /show\s+last\s+(\d+)\s+events/i, action: 'shortcut_show_events', description: 'Show recent events' },
+  { pattern: /(?:go\s+to\s+enrollment|open\s+enrollment)\s+and\s+start\s+camera/i, action: 'shortcut_enroll_start', description: 'Open enrollment and start camera' },
+  { pattern: /refresh\s+dashboard/i, action: 'shortcut_refresh_dashboard', description: 'Refresh dashboard data' },
 ];
 
 /**

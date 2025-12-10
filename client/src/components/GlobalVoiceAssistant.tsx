@@ -178,6 +178,58 @@ export function GlobalVoiceAssistant({ onCommand }: GlobalVoiceAssistantProps) {
       return;
     }
 
+    // Handle voice shortcuts
+    if (action === 'shortcut_enroll_person') {
+      const name = params?.[0] || '';
+      speak(`Opening enrollment for ${name}. Please fill in the details.`);
+      navigate('/enrollment');
+      // Store name in localStorage for enrollment page to pick up
+      if (name) {
+        localStorage.setItem('voiceEnrollName', name);
+      }
+      return;
+    }
+
+    if (action === 'shortcut_verify_now') {
+      speak("Starting verification now.");
+      navigate('/verification');
+      // Trigger auto-start via localStorage flag
+      localStorage.setItem('voiceAutoStartVerification', 'true');
+      return;
+    }
+
+    if (action === 'shortcut_search') {
+      const query = params?.[0] || '';
+      speak(`Searching for ${query}.`);
+      navigate('/enrollees');
+      // Store search query for enrollees page
+      if (query) {
+        localStorage.setItem('voiceSearchQuery', query);
+      }
+      return;
+    }
+
+    if (action === 'shortcut_show_events') {
+      const count = params?.[0] || '10';
+      speak(`Showing last ${count} events.`);
+      navigate('/events');
+      return;
+    }
+
+    if (action === 'shortcut_enroll_start') {
+      speak("Opening enrollment and starting camera.");
+      navigate('/enrollment');
+      localStorage.setItem('voiceAutoStartCamera', 'true');
+      return;
+    }
+
+    if (action === 'shortcut_refresh_dashboard') {
+      speak("Refreshing dashboard.");
+      navigate('/');
+      window.location.reload();
+      return;
+    }
+
     // Forward other commands to parent
     if (onCommand) {
       onCommand(action, params);

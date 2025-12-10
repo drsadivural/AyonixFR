@@ -394,3 +394,38 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Create voice tutorial mode (help command with command list)
 - [x] Test all voice commands (ready for production testing)
 - [x] Create checkpoint after implementation
+
+
+## Voice Onboarding Tutorial
+- [x] Create voice tutorial component with step-by-step guidance
+- [x] Add first-time user detection (localStorage flag)
+- [x] Implement interactive voice tutorial with examples
+- [x] Add "Try saying..." prompts with visual cues
+- [x] Create tutorial progress tracking
+- [x] Add skip tutorial option
+- [x] Store tutorial completion status
+- [x] Add "Replay Tutorial" option via useVoiceTutorial hook
+
+## Voice Shortcuts
+- [x] Implement combined action shortcuts (e.g., "enroll John Smith")
+- [x] Add quick verification shortcut ("verify now")
+- [x] Create search shortcuts ("find John", "search John Smith")
+- [x] Add navigation + action shortcuts ("go to enrollment and start camera")
+- [x] Implement data entry shortcuts via localStorage flags
+- [x] Add batch operation shortcuts ("show last 10 events")
+- [x] Create system shortcuts ("refresh dashboard")
+
+## Multi-language Voice Support
+- [x] Add language selection to Voice Settings
+- [x] Implement Japanese voice recognition
+- [x] Implement English voice recognition
+- [x] Create Japanese voice response templates
+- [x] Create English voice response templates
+- [x] Add language-specific TTS voices
+- [x] Update voice commands to support both languages
+- [x] Store user language preference (localStorage)
+- [x] Create multiLanguageVoice service module
+- [ ] Integrate multi-language into GlobalVoiceAssistant
+- [ ] Test Japanese voice commands
+- [ ] Test English voice commands
+- [x] Create checkpoint after implementation

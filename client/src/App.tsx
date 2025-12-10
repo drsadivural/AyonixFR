@@ -20,6 +20,7 @@ import VoiceSettings from "@/pages/VoiceSettings";
 import APIKeysSettings from "@/pages/APIKeysSettings";
 import ChatAssistant from "@/components/ChatAssistant";
 import { GlobalVoiceAssistant } from "@/components/GlobalVoiceAssistant";
+import { VoiceOnboardingTutorial, useVoiceTutorial } from "@/components/VoiceOnboardingTutorial";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -29,6 +30,7 @@ import { Loader2 } from "lucide-react";
 function AuthenticatedApp() {
   const { user, loading } = useAuth();
   const [location] = useLocation();
+  const { showTutorial, handleComplete, handleSkip } = useVoiceTutorial();
 
   if (loading) {
     return (
@@ -83,6 +85,12 @@ function AuthenticatedApp() {
         <ChatAssistant />
       </div>
       <GlobalVoiceAssistant />
+      {showTutorial && (
+        <VoiceOnboardingTutorial
+          onComplete={handleComplete}
+          onSkip={handleSkip}
+        />
+      )}
     </SidebarProvider>
   );
 }

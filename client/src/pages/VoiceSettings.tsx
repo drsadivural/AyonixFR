@@ -7,10 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
-import { Volume2, Mic, Settings2 } from 'lucide-react';
+import { Volume2, Mic, Settings2, Globe } from 'lucide-react';
+import { SUPPORTED_LANGUAGES, getUserLanguage, setUserLanguage, type SupportedLanguage } from '@/services/multiLanguageVoice';
 
 export default function VoiceSettings() {
   const { data: settings, isLoading } = trpc.settings.get.useQuery();
+  const [language, setLanguage] = useState<SupportedLanguage>(getUserLanguage());
   const updateMutation = trpc.settings.update.useMutation({
     onSuccess: () => {
       toast.success('Voice settings saved successfully');
@@ -104,6 +106,52 @@ export default function VoiceSettings() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Language Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Voice Language
+            </CardTitle>
+            <CardDescription>Select language for voice recognition and responses</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Language</Label>
+              <Select
+                value={language}
+                onValueChange={(value: SupportedLanguage) => {
+                  setLanguage(value);
+                  setUserLanguage(value);
+                  toast.success(`Language changed to ${SUPPORTED_LANGUAGES[value].nativeName}`);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(SUPPORTED_LANGUAGES).map(([code, config]) => (
+                    <SelectItem key={code} value={code}>
+                      {config.nativeName} ({config.name})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Voice commands and responses will use the selected language
+              </p>
+            </div>
+
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm font-semibold mb-2">Supported Languages</p>
+              <ul className="text-xs space-y-1 text-muted-foreground">
+                <li>• English (en-US) - Full support</li>
+                <li>• Japanese (ja-JP) - Full support</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* TTS Provider Selection */}
         <Card>
           <CardHeader>
