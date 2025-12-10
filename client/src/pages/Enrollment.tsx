@@ -22,6 +22,8 @@ export default function Enrollment() {
   const [showMoreInfo, setShowMoreInfo] = useState(false);
   const [landmarks, setLandmarks] = useState<Array<{x: number, y: number, z: number}> | null>(null);
   const [faceQuality, setFaceQuality] = useState<any>(null);
+  const [cameraDevices, setCameraDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string>('');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -79,15 +81,32 @@ export default function Enrollment() {
     }
   }, [landmarksData]);
 
-  const startCamera = async () => {
+  // Enumerate camera devices on component mount
+  useEffect(() => {
+    const enumerateDevices = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setCameraDevices(videoDevices);
+        if (videoDevices.length > 0 && !selectedCameraId) {
+          setSelectedCameraId(videoDevices[0].deviceId);
+        }
+      } catch (error) {
+        console.error('Error enumerating devices:', error);
+      }
+    };
+    enumerateDevices();
+  }, []);
+
+  const startCamera = async (deviceId?: string) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'user'
-        } 
-      });
+      const constraints: MediaStreamConstraints = {
+        video: deviceId 
+          ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -314,6 +333,41 @@ export default function Enrollment() {
               </TabsList>
 
               <TabsContent value="camera" className="space-y-4">
+                {/* Camera Selector */}
+                {cameraDevices.length > 1 && (
+                  <div className="space-y-2">
+                    <Label>Select Camera</Label>
+                    <Select 
+                      value={selectedCameraId} 
+                      onValueChange={(value) => {
+                        setSelectedCameraId(value);
+                        if (isCapturing) {
+                          stopCamera();
+                          setTimeout(() => startCamera(value), 100);
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cameraDevices.map((device) => (
+                          <SelectItem key={device.deviceId} value={device.deviceId}>
+                            {device.label || `Camera ${cameraDevices.indexOf(device) + 1}`}
+                            {device.label.toLowerCase().includes('iphone') && ' 📱'}
+                            {device.label.toLowerCase().includes('continuity') && ' 📱'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {cameraDevices.some(d => d.label.toLowerCase().includes('iphone') || d.label.toLowerCase().includes('continuity')) && (
+                      <p className="text-sm text-muted-foreground">
+                        📱 iPhone camera detected via Continuity Camera
+                      </p>
+                    )}
+                  </div>
+                )}
+                
                 <div className="relative w-full h-[600px] bg-muted rounded-lg overflow-hidden">
                   {!isCapturing && !capturedImage && (
                     <div className="absolute inset-0 flex items-center justify-center z-10">

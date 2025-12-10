@@ -21,6 +21,7 @@ export default function Enrollees() {
   const [editForm, setEditForm] = useState({
     name: '',
     surname: '',
+    faceImageUrl: '',
     email: '',
     phone: '',
     address: '',
@@ -75,6 +76,7 @@ export default function Enrollees() {
     setEditForm({
       name: enrollee.name,
       surname: enrollee.surname,
+      faceImageUrl: enrollee.faceImageUrl || '',
       email: enrollee.email || '',
       phone: enrollee.phone || '',
       address: enrollee.address || '',
@@ -312,6 +314,40 @@ export default function Enrollees() {
             <DialogDescription>Update personal information</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Photo Update Section */}
+            <div className="space-y-2">
+              <Label>Profile Photo</Label>
+              <div className="flex items-center gap-4">
+                {editForm.faceImageUrl && (
+                  <img 
+                    src={editForm.faceImageUrl} 
+                    alt="Current photo" 
+                    className="w-24 h-24 rounded-lg object-cover"
+                  />
+                )}
+                <div className="flex-1">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setEditForm({ ...editForm, faceImageUrl: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Upload a new photo to update face recognition data
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="edit-name">Name</Label>
               <Input

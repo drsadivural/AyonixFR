@@ -514,3 +514,30 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [ ] Test photo enrollment enhancements
 - [ ] Test iPhone Continuity Camera
 - [ ] Create checkpoint after all implementations
+
+
+## iPhone Continuity Camera Integration
+- [x] Research Continuity Camera device selection
+- [x] Add camera device enumeration in enrollment page
+- [x] Detect iPhone camera devices in device list
+- [x] Add visual indicator for iPhone camera option (📱 emoji)
+- [x] Implement camera switching with device selector
+- [ ] Test iPhone camera selection with MacBook (requires hardware)
+- [x] Add fallback message for non-Apple devices (selector only shows when multiple cameras)
+
+## Photo Update in Modify Mode
+- [x] Add photo upload button to enrollee edit dialog
+- [x] Show current photo in edit dialog (24x24 thumbnail)
+- [x] Implement photo preview before updating (real-time preview)
+- [x] Photo sent to backend via update mutation
+- [ ] Backend: Re-extract face embedding from new photo
+- [ ] Backend: Update enrollee photo in S3 storage
+- [ ] Backend: Update database with new photo URL and embedding
+- [x] Add success/error notifications (via toast)
+- [ ] Test photo update functionality
+
+## Final Testing & Checkpoint
+- [ ] Test iPhone Continuity Camera on MacBook
+- [ ] Test photo update in modify dialog
+- [ ] Verify face re-detection works correctly
+- [ ] Create final checkpoint
