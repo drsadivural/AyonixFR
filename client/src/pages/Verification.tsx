@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { Camera, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { generateMockEmbedding } from "@/lib/faceDetection";
 import { toast } from "sonner";
 
 export default function Verification() {
@@ -67,8 +68,12 @@ export default function Verification() {
         ctx.drawImage(video, 0, 0);
         const imageData = canvas.toDataURL('image/jpeg');
         
+        // Generate face embedding (using mock for now, replace with actual face-api.js in production)
+        const faceEmbeddings = [generateMockEmbedding()];
+        
         verifyMutation.mutate({
           imageBase64: imageData,
+          faceEmbeddings,
           cameraSource,
           threshold: settings?.matchThreshold ? settings.matchThreshold / 100 : 0.75,
         });

@@ -7,7 +7,8 @@ import { invokeLLM } from "./_core/llm";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { storagePut } from "./storage";
 import * as db from "./db";
-import { extractFaceEmbedding, verifyFace } from "./faceRecognition";
+import { findBestMatch, verifyFaces, validateEmbedding } from "./faceRecognition";
+import { TRPCError } from "@trpc/server";
 
 export const appRouter = router({
   system: systemRouter,
@@ -48,55 +49,54 @@ export const appRouter = router({
         address: z.string().optional(),
         instagram: z.string().optional(),
         imageBase64: z.string(),
-        enrollmentMethod: z.enum(['camera', 'photo', 'mobile']),
+        faceEmbedding: z.array(z.number()),
+        enrollmentMethod: z.enum(['camera', 'upload', 'mobile']),
       }))
-      .mutation(async ({ input, ctx }) => {
-        // Convert base64 to buffer
-        const imageBuffer = Buffer.from(input.imageBase64.split(',')[1] || input.imageBase64, 'base64');
-        
-        // Extract face embedding
-        const faceData = await extractFaceEmbedding(imageBuffer);
-        if (!faceData) {
-          throw new Error('No face detected in the image');
+      .mutation(async ({ ctx, input }) => {
+        // Validate embedding
+        if (!validateEmbedding(input.faceEmbedding)) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid face embedding format (must be 128-dimensional array)',
+          });
         }
-        
+
         // Upload image to S3
-        const timestamp = Date.now();
-        const randomSuffix = Math.random().toString(36).substring(7);
-        const imageKey = `enrollees/${ctx.user.id}-${timestamp}-${randomSuffix}.jpg`;
-        const thumbnailKey = `enrollees/thumb-${ctx.user.id}-${timestamp}-${randomSuffix}.jpg`;
+        const imageBuffer = Buffer.from(
+          input.imageBase64.split(',')[1] || input.imageBase64,
+          'base64'
+        );
+        const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        const imageKey = `faces/${ctx.user.id}/${uniqueId}.jpg`;
         
         const { url: imageUrl } = await storagePut(imageKey, imageBuffer, 'image/jpeg');
-        const { url: thumbnailUrl } = await storagePut(thumbnailKey, imageBuffer, 'image/jpeg');
-        
-        // Create enrollee record
+
+        // Create enrollee
         const enrollee = await db.createEnrollee({
           name: input.name,
           surname: input.surname,
-          email: input.email || null,
-          phone: input.phone || null,
-          address: input.address || null,
-          instagram: input.instagram || null,
+          email: input.email,
+          phone: input.phone,
+          address: input.address,
+          instagram: input.instagram,
           faceImageUrl: imageUrl,
           faceImageKey: imageKey,
-          thumbnailUrl,
-          faceEmbedding: faceData.embedding,
+          thumbnailUrl: imageUrl,
+          faceEmbedding: input.faceEmbedding as any,
           enrollmentMethod: input.enrollmentMethod,
           enrolledBy: ctx.user.id,
         });
-        
-        // Create event
+
+        // Log event
         await db.createEvent({
+          userId: ctx.user.id,
           eventType: 'enrollment',
           title: `New enrollment: ${input.name} ${input.surname}`,
           description: `Enrolled via ${input.enrollmentMethod}`,
-          enrolleeId: enrollee.id,
-          recognitionLogId: null,
-          imageUrl: thumbnailUrl,
+          imageUrl,
           cameraSource: input.enrollmentMethod,
-          userId: ctx.user.id,
         });
-        
+
         return enrollee;
       }),
 
@@ -111,9 +111,7 @@ export const appRouter = router({
         instagram: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        const { id, ...data } = input;
-        await db.updateEnrollee(id, data);
-        return { success: true };
+        return await db.updateEnrollee(input.id, input);
       }),
 
     delete: protectedProcedure
@@ -124,114 +122,125 @@ export const appRouter = router({
       }),
   }),
 
-  // ============= VERIFICATION OPERATIONS =============
+  // ============= VERIFICATION =============
   verification: router({
     verify: protectedProcedure
       .input(z.object({
         imageBase64: z.string(),
+        faceEmbeddings: z.array(z.array(z.number())),
         cameraSource: z.string(),
         threshold: z.number().optional(),
       }))
-      .mutation(async ({ input, ctx }) => {
-        // Convert base64 to buffer
-        const imageBuffer = Buffer.from(input.imageBase64.split(',')[1] || input.imageBase64, 'base64');
-        
+      .mutation(async ({ input }) => {
+        // Validate embeddings
+        for (const embedding of input.faceEmbeddings) {
+          if (!validateEmbedding(embedding)) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Invalid face embedding format',
+            });
+          }
+        }
+
+        if (input.faceEmbeddings.length === 0) {
+          await db.createEvent({
+            userId: 1, // System user
+            eventType: 'no_match',
+            title: 'No face detected',
+            description: 'Verification attempted but no face was detected',
+            cameraSource: input.cameraSource,
+          });
+          
+          return {
+            detectedFaces: 0,
+            matches: [],
+          };
+        }
+
         // Get all enrolled faces
         const enrollees = await db.getAllEnrollees();
         const enrolledFaces = enrollees.map(e => ({
           id: e.id,
-          embedding: e.faceEmbedding as number[],
+          embedding: typeof e.faceEmbedding === 'string' ? JSON.parse(e.faceEmbedding) : e.faceEmbedding,
           name: e.name,
           surname: e.surname,
         }));
-        
-        // Get user settings for threshold
-        const settings = await db.getUserSettings(ctx.user.id);
-        const threshold = input.threshold || (settings?.matchThreshold || 75) / 100;
-        
-        // Verify face
-        const result = await verifyFace(imageBuffer, enrolledFaces, threshold);
-        
-        // Upload snapshot to S3
-        const timestamp = Date.now();
-        const randomSuffix = Math.random().toString(36).substring(7);
-        const snapshotKey = `verifications/${ctx.user.id}-${timestamp}-${randomSuffix}.jpg`;
-        const { url: snapshotUrl } = await storagePut(snapshotKey, imageBuffer, 'image/jpeg');
-        
-        // Create recognition logs for each match (or one for no match)
-        const logs = [];
-        
-        if (result.matches.length > 0) {
-          for (const match of result.matches) {
-            const log = await db.createRecognitionLog({
-              enrolleeId: match.enrolleeId,
-              matchConfidence: match.confidence,
-              snapshotUrl,
-              snapshotKey,
-              cameraSource: input.cameraSource,
-              detectedFaces: result.detectedFaces,
-              matched: true,
-              verifiedBy: ctx.user.id,
-            });
-            
-            // Create match event
-            await db.createEvent({
-              eventType: 'match',
-              title: `Match found: ${match.name} ${match.surname}`,
-              description: `Confidence: ${match.confidence}%`,
-              enrolleeId: match.enrolleeId,
-              recognitionLogId: log.id,
-              imageUrl: snapshotUrl,
-              cameraSource: input.cameraSource,
-              userId: ctx.user.id,
-            });
-            
-            logs.push(log);
-          }
-        } else {
-          const log = await db.createRecognitionLog({
-            enrolleeId: null,
-            matchConfidence: null,
-            snapshotUrl,
-            snapshotKey,
+
+        // Verify faces
+        const result = verifyFaces(
+          input.faceEmbeddings,
+          enrolledFaces,
+          input.threshold || 0.6
+        );
+
+        // Log verification events
+        for (const match of result.matches) {
+          await db.createRecognitionLog({
+            enrolleeId: match.enrolleeId,
+            matchConfidence: match.confidence,
+            snapshotUrl: '',
+            snapshotKey: '',
+            matched: true,
             cameraSource: input.cameraSource,
             detectedFaces: result.detectedFaces,
-            matched: false,
-            verifiedBy: ctx.user.id,
+            verifiedBy: 1, // System user
           });
           
-          // Create no match event
           await db.createEvent({
+            userId: 1, // System user
+            eventType: 'match',
+            title: `Match found: ${match.name} ${match.surname}`,
+            description: `Confidence: ${match.confidence}%`,
+            cameraSource: input.cameraSource,
+            enrolleeId: match.enrolleeId,
+          });
+        }
+
+        if (result.matches.length === 0 && result.detectedFaces > 0) {
+          await db.createEvent({
+            userId: 1, // System user
             eventType: 'no_match',
             title: 'No match found',
-            description: `Detected ${result.detectedFaces} face(s), but no match in database`,
-            enrolleeId: null,
-            recognitionLogId: log.id,
-            imageUrl: snapshotUrl,
+            description: `${result.detectedFaces} face(s) detected but no match in database`,
             cameraSource: input.cameraSource,
-            userId: ctx.user.id,
           });
-          
-          logs.push(log);
         }
-        
-        return {
-          detectedFaces: result.detectedFaces,
-          matches: result.matches,
-          snapshotUrl,
-          logs,
-        };
-      }),
 
-    logs: protectedProcedure
-      .input(z.object({
-        enrolleeId: z.number().optional(),
-        matched: z.boolean().optional(),
-        limit: z.number().optional(),
-      }))
-      .query(async ({ input }) => {
-        return await db.getRecognitionLogs(input);
+        return result;
       }),
+  }),
+
+  // ============= ANALYTICS =============
+  analytics: router({
+    dashboard: protectedProcedure.query(async () => {
+      const enrollees = await db.getAllEnrollees();
+      const logs = await db.getRecognitionLogs();
+      
+      const now = new Date();
+      const thisWeekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const enrolleesThisWeek = enrollees.filter(e => new Date(e.createdAt) >= thisWeekStart).length;
+      const enrolleesThisMonth = enrollees.filter(e => new Date(e.createdAt) >= thisMonthStart).length;
+
+      const matches = logs.filter((l: any) => l.matched).length;
+      const noMatches = logs.length - matches;
+      const successRate = logs.length > 0 ? Math.round((matches / logs.length) * 100) : 0;
+
+      return {
+        enrollees: {
+          total: enrollees.length,
+          thisWeek: enrolleesThisWeek,
+          thisMonth: enrolleesThisMonth,
+        },
+        verifications: {
+          total: logs.length,
+          matches,
+          noMatches,
+          successRate,
+        },
+      };
+    }),
   }),
 
   // ============= EVENTS =============
@@ -239,55 +248,28 @@ export const appRouter = router({
     list: protectedProcedure
       .input(z.object({
         eventType: z.enum(['enrollment', 'match', 'no_match', 'system']).optional(),
-        enrolleeId: z.number().optional(),
         limit: z.number().optional(),
       }))
-      .query(async ({ input, ctx }) => {
-        return await db.getEvents({
-          ...input,
-          userId: ctx.user.id,
-        });
+      .query(async ({ input }) => {
+        return await db.getEvents({ eventType: input.eventType, limit: input.limit });
       }),
   }),
 
   // ============= SETTINGS =============
   settings: router({
     get: protectedProcedure.query(async ({ ctx }) => {
-      const settings = await db.getUserSettings(ctx.user.id);
-      if (!settings) {
-        // Return default settings
-        return {
-          userId: ctx.user.id,
-          llmProvider: 'openai',
-          llmModel: null,
-          llmTemperature: 70,
-          llmMaxTokens: 2000,
-          llmSystemPrompt: null,
-          voiceLanguage: 'en',
-          voiceEngine: 'whisper',
-          voiceInputSensitivity: 50,
-          voiceOutputSpeed: 100,
-          voiceOutputStyle: 'conversational',
-          matchThreshold: 75,
-          minFaceSize: 80,
-          faceTrackingSmoothing: 50,
-          multiFaceMatch: true,
-        };
-      }
-      return settings;
+      return await db.getUserSettings(ctx.user.id);
     }),
 
     update: protectedProcedure
       .input(z.object({
         llmProvider: z.string().optional(),
-        llmApiKey: z.string().optional(),
         llmModel: z.string().optional(),
         llmTemperature: z.number().optional(),
         llmMaxTokens: z.number().optional(),
         llmSystemPrompt: z.string().optional(),
         voiceLanguage: z.string().optional(),
         voiceEngine: z.string().optional(),
-        voiceApiKey: z.string().optional(),
         voiceInputSensitivity: z.number().optional(),
         voiceOutputSpeed: z.number().optional(),
         voiceOutputStyle: z.string().optional(),
@@ -296,27 +278,12 @@ export const appRouter = router({
         faceTrackingSmoothing: z.number().optional(),
         multiFaceMatch: z.boolean().optional(),
       }))
-      .mutation(async ({ input, ctx }) => {
+      .mutation(async ({ ctx, input }) => {
         return await db.upsertSettings(ctx.user.id, input);
       }),
   }),
 
-  // ============= ANALYTICS =============
-  analytics: router({
-    dashboard: protectedProcedure.query(async () => {
-      const [enrolleeStats, verificationStats] = await Promise.all([
-        db.getEnrolleeStats(),
-        db.getVerificationStats(),
-      ]);
-      
-      return {
-        enrollees: enrolleeStats,
-        verifications: verificationStats,
-      };
-    }),
-  }),
-
-  // ============= LLM CHAT =============
+  // ============= CHAT =============
   chat: router({
     message: protectedProcedure
       .input(z.object({
@@ -324,37 +291,37 @@ export const appRouter = router({
         language: z.enum(['en', 'ja']),
         context: z.object({
           currentPage: z.string().optional(),
-          recentMatches: z.array(z.any()).optional(),
         }).optional(),
       }))
-      .mutation(async ({ input, ctx }) => {
+      .mutation(async ({ ctx, input }) => {
         const settings = await db.getUserSettings(ctx.user.id);
         
         const systemPrompt = settings?.llmSystemPrompt || 
           (input.language === 'ja' 
-            ? `あなたはAyonix顔認識システムのAIアシスタントです。ユーザーの質問に答え、システムの使用をサポートします。フレンドリーで会話的なトーンで応答してください。`
-            : `You are an AI assistant for the Ayonix Face Recognition System. Help users with questions and system usage in a friendly, conversational tone.`);
-        
+            ? 'あなたはAyonix顔認識システムのAIアシスタントです。ユーザーの質問に親切に答え、システムの使い方を説明してください。'
+            : 'You are an AI assistant for the Ayonix Face Recognition System. Help users with questions about enrollment, verification, and system usage in a friendly, conversational tone.');
+
         const response = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: input.message },
           ],
-          max_tokens: settings?.llmMaxTokens || 2000,
         });
+
+        const content = response.choices[0]?.message?.content || 'Sorry, I could not process your request.';
         
         return {
-          response: response.choices[0]?.message?.content || 'No response',
+          response: typeof content === 'string' ? content : JSON.stringify(content),
         };
       }),
   }),
 
-  // ============= VOICE TRANSCRIPTION =============
+  // ============= VOICE =============
   voice: router({
     transcribe: protectedProcedure
       .input(z.object({
         audioUrl: z.string(),
-        language: z.enum(['en', 'ja']),
+        language: z.enum(['en', 'ja']).optional(),
       }))
       .mutation(async ({ input }) => {
         const result = await transcribeAudio({
@@ -363,7 +330,10 @@ export const appRouter = router({
         });
         
         if ('error' in result) {
-          throw new Error(result.error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: result.error,
+          });
         }
         
         return {

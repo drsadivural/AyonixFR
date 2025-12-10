@@ -9,10 +9,11 @@ import { trpc } from "@/lib/trpc";
 import { Camera, Upload, Smartphone, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { generateMockEmbedding } from "@/lib/faceDetection";
 
 export default function Enrollment() {
   const [, navigate] = useLocation();
-  const [enrollmentMethod, setEnrollmentMethod] = useState<'camera' | 'photo' | 'mobile'>('camera');
+  const [enrollmentMethod, setEnrollmentMethod] = useState<'camera' | 'upload' | 'mobile'>('camera');
   const [showMoreInfo, setShowMoreInfo] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -112,9 +113,13 @@ export default function Enrollment() {
       return;
     }
 
+    // Generate face embedding (using mock for now, replace with actual face-api.js in production)
+    const faceEmbedding = generateMockEmbedding();
+    
     enrollMutation.mutate({
       ...formData,
       imageBase64: capturedImage,
+      faceEmbedding,
       enrollmentMethod,
     });
   };
@@ -215,7 +220,7 @@ export default function Enrollment() {
             )}
 
             {/* Photo Upload */}
-            {enrollmentMethod === 'photo' && (
+            {enrollmentMethod === 'upload' && (
               <div className="space-y-4">
                 {capturedImage ? (
                   <>
