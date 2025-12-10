@@ -403,6 +403,37 @@ export const appRouter = router({
         return result;
       }),
   }),
+
+  // ============= SIMILARITY SEARCH =============
+  similarity: router({
+    findSimilar: protectedProcedure
+      .input(z.object({
+        enrolleeId: z.number(),
+        threshold: z.number().min(0).max(1).default(0.85),
+      }))
+      .query(async ({ input }) => {
+        const enrollee = await db.getEnrolleeById(input.enrolleeId);
+        if (!enrollee || !enrollee.faceEmbedding) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Enrollee not found or no face embedding' });
+        }
+        
+        const targetEmbedding = JSON.parse(enrollee.faceEmbedding as string);
+        const similarFaces = await db.findSimilarFaces(targetEmbedding, input.threshold);
+        
+        // Exclude the target enrollee from results
+        return similarFaces.filter((f: any) => f.id !== input.enrolleeId);
+      }),
+    
+    checkDuplicates: protectedProcedure
+      .input(z.object({
+        faceEmbedding: z.array(z.number()),
+        threshold: z.number().min(0).max(1).default(0.90),
+      }))
+      .query(async ({ input }) => {
+        const similarFaces = await db.findSimilarFaces(input.faceEmbedding, input.threshold);
+        return similarFaces;
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

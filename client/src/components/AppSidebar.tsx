@@ -10,7 +10,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, UserPlus, Users, ScanFace, Activity, Settings, LogOut, FolderUp } from "lucide-react";
+import { LayoutDashboard, UserPlus, Users, ScanFace, Activity, Settings, LogOut, FolderUp, GitCompare } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -20,6 +20,7 @@ const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
   { title: "Enrollment", icon: UserPlus, url: "/enrollment" },
   { title: "Batch Enrollment", icon: FolderUp, url: "/batch-enrollment" },
+  { title: "Similarity Search", icon: GitCompare, url: "/similarity-search" },
   { title: "Enrollees", icon: Users, url: "/enrollees" },
   { title: "Verification", icon: ScanFace, url: "/verification" },
   { title: "Events", icon: Activity, url: "/events" },

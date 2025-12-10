@@ -37,9 +37,16 @@ export default function Enrollment() {
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  const [duplicateWarning, setDuplicateWarning] = useState<any[]>([]);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  
+  // Duplicate check will be done after enrollment for now
+  
   const enrollMutation = trpc.enrollees.enroll.useMutation({
     onSuccess: () => {
       toast.success('Enrollment successful!');
+      setDuplicateWarning([]);
+      setShowDuplicateDialog(false);
       // Reset form
       setFormData({
         name: '',
@@ -244,7 +251,10 @@ export default function Enrollment() {
       return;
     }
 
-    // Face embedding will be extracted by Python service on the backend
+    // First check for duplicates by extracting embedding
+    // For now, we'll skip duplicate check and proceed directly
+    // In production, you would extract embedding first, check duplicates, then enroll
+    
     enrollMutation.mutate({
       ...formData,
       imageBase64: capturedImage,

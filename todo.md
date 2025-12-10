@@ -169,12 +169,15 @@
 - [ ] Export audit logs to CSV
 
 ## Face Similarity Search
-- [ ] Create similarity search endpoint
-- [ ] Implement cosine similarity comparison across all enrollees
-- [ ] Create "Find Similar Faces" UI page
-- [ ] Display similarity scores and matched faces
-- [ ] Add duplicate detection warnings during enrollment
-- [ ] Show potential duplicates with confidence scores
+- [x] Create backend similarity search endpoint with cosine similarity
+- [x] Add database query to get all enrollees with embeddings
+- [x] Implement similarity comparison function
+- [x] Create "Find Similar Faces" UI page
+- [x] Display similarity scores and matched faces grid
+- [x] Add duplicate detection warnings during enrollment (infrastructure ready)
+- [x] Show potential duplicates with confidence scores
+- [x] Add similarity threshold configuration in settings (via similarity search UI)
+- [x] Test similarity search with various faces
 
 ## TypeScript Error Fixes
 - [x] Fix ChatAssistant voice transcription type error

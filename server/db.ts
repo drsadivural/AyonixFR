@@ -110,6 +110,53 @@ export async function getAuditLogsByOperation(operation: string, limit: number =
 export async function getAuditLogsByEnrollee(enrolleeId: number, limit: number = 100): Promise<any[]> {
   return []; // Temporarily disabled
 }
+
+// Face Similarity Search
+export async function getAllEnrolleesWithEmbeddings(): Promise<Enrollee[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(enrollees);
+}
+
+export async function findSimilarFaces(targetEmbedding: number[], threshold: number = 0.85): Promise<Array<Enrollee & { similarity: number }>> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const allEnrollees = await db.select().from(enrollees);
+  const results: Array<Enrollee & { similarity: number }> = [];
+  
+  for (const enrollee of allEnrollees) {
+    if (!enrollee.faceEmbedding) continue;
+    
+    const embedding = JSON.parse(enrollee.faceEmbedding as string);
+    const similarity = cosineSimilarity(targetEmbedding, embedding);
+    
+    if (similarity >= threshold) {
+      results.push({ ...enrollee, similarity });
+    }
+  }
+  
+  // Sort by similarity descending
+  return results.sort((a, b) => b.similarity - a.similarity);
+}
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length) return 0;
+  
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  
+  const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+  return denominator === 0 ? 0 : dotProduct / denominator;
+}
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {
