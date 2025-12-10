@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -21,6 +21,19 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    completeProfile: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        email: z.string().email().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.updateUserProfile(ctx.user.id, {
+          name: input.name,
+          email: input.email || null,
+          profileCompleted: true,
+        });
+        return { success: true };
+      }),
   }),
 
   // ============= ENROLLEE OPERATIONS =============
@@ -50,9 +63,9 @@ export const appRouter = router({
         address: z.string().optional(),
         instagram: z.string().optional(),
         imageBase64: z.string(),
-        enrollmentMethod: z.enum(['camera', 'upload', 'mobile']),
+        enrollmentMethod: z.enum(['camera', 'photo', 'mobile']),
       }))
-      .mutation(async ({ ctx, input }) => {
+      .mutation(async ({ input, ctx }) => {
         // Extract face embedding using Python service with MediaPipe
         let faceEmbedding: number[];
         try {
@@ -60,32 +73,30 @@ export const appRouter = router({
         } catch (error) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: error instanceof Error ? error.message : 'Failed to extract face embedding',
+            message: 'Failed to detect face in image. Please ensure the image contains a clear, frontal face.',
           });
         }
 
         // Upload image to S3
-        const imageBuffer = Buffer.from(
-          input.imageBase64.split(',')[1] || input.imageBase64,
-          'base64'
-        );
-        const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-        const imageKey = `faces/${ctx.user.id}/${uniqueId}.jpg`;
+        const base64Data = input.imageBase64.split(',')[1] || input.imageBase64;
+        const imageBuffer = Buffer.from(base64Data, 'base64');
         
+        const randomSuffix = Math.random().toString(36).substring(7);
+        const imageKey = `enrollees/${ctx.user.id}-${Date.now()}-${randomSuffix}.jpg`;
         const { url: imageUrl } = await storagePut(imageKey, imageBuffer, 'image/jpeg');
 
         // Create enrollee
         const enrollee = await db.createEnrollee({
           name: input.name,
           surname: input.surname,
-          email: input.email,
-          phone: input.phone,
-          address: input.address,
-          instagram: input.instagram,
+          email: input.email || null,
+          phone: input.phone || null,
+          address: input.address || null,
+          instagram: input.instagram || null,
           faceImageUrl: imageUrl,
           faceImageKey: imageKey,
           thumbnailUrl: imageUrl,
-          faceEmbedding: faceEmbedding as any,
+          faceEmbedding: JSON.stringify(faceEmbedding),
           enrollmentMethod: input.enrollmentMethod,
           enrolledBy: ctx.user.id,
         });
@@ -96,6 +107,7 @@ export const appRouter = router({
           eventType: 'enrollment',
           title: `New enrollment: ${input.name} ${input.surname}`,
           description: `Enrolled via ${input.enrollmentMethod}`,
+          enrolleeId: enrollee.id,
           imageUrl,
           cameraSource: input.enrollmentMethod,
         });
@@ -114,7 +126,9 @@ export const appRouter = router({
         instagram: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        return await db.updateEnrollee(input.id, input);
+        const { id, ...updateData } = input;
+        await db.updateEnrollee(id, updateData);
+        return { success: true };
       }),
 
     delete: protectedProcedure
@@ -182,9 +196,9 @@ export const appRouter = router({
             snapshotUrl: '',
             snapshotKey: '',
             matched: true,
+            verifiedBy: 1, // System user
             cameraSource: input.cameraSource,
             detectedFaces: result.detectedFaces,
-            verifiedBy: 1, // System user
           });
           
           await db.createEvent({
@@ -218,46 +232,41 @@ export const appRouter = router({
       .query(async ({ input }) => {
         try {
           const landmarks = await get3DLandmarks(input.imageBase64);
-          return landmarks;
+          return { landmarks };
         } catch (error) {
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: error instanceof Error ? error.message : 'Failed to extract landmarks',
-          });
+          return { landmarks: [] };
         }
+      }),
+  }),
+
+  // ============= RECOGNITION LOGS =============
+  recognitionLogs: router({
+    list: protectedProcedure
+      .input(z.object({
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        enrolleeId: z.number().optional(),
+        matched: z.boolean().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getRecognitionLogs(input);
+      }),
+
+    byEnrollee: protectedProcedure
+      .input(z.object({ enrolleeId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getRecognitionLogById(input.enrolleeId);
       }),
   }),
 
   // ============= ANALYTICS =============
   analytics: router({
-    dashboard: protectedProcedure.query(async () => {
-      const enrollees = await db.getAllEnrollees();
-      const logs = await db.getRecognitionLogs();
-      
-      const now = new Date();
-      const thisWeekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    enrollmentStats: protectedProcedure.query(async () => {
+      return await db.getEnrolleeStats();
+    }),
 
-      const enrolleesThisWeek = enrollees.filter(e => new Date(e.createdAt) >= thisWeekStart).length;
-      const enrolleesThisMonth = enrollees.filter(e => new Date(e.createdAt) >= thisMonthStart).length;
-
-      const matches = logs.filter((l: any) => l.matched).length;
-      const noMatches = logs.length - matches;
-      const successRate = logs.length > 0 ? Math.round((matches / logs.length) * 100) : 0;
-
-      return {
-        enrollees: {
-          total: enrollees.length,
-          thisWeek: enrolleesThisWeek,
-          thisMonth: enrolleesThisMonth,
-        },
-        verifications: {
-          total: logs.length,
-          matches,
-          noMatches,
-          successRate,
-        },
-      };
+    verificationStats: protectedProcedure.query(async () => {
+      return await db.getVerificationStats();
     }),
   }),
 
@@ -282,12 +291,14 @@ export const appRouter = router({
     update: protectedProcedure
       .input(z.object({
         llmProvider: z.string().optional(),
+        llmApiKey: z.string().optional(),
         llmModel: z.string().optional(),
         llmTemperature: z.number().optional(),
         llmMaxTokens: z.number().optional(),
         llmSystemPrompt: z.string().optional(),
-        voiceLanguage: z.string().optional(),
+        voiceLanguage: z.enum(['en', 'ja']).optional(),
         voiceEngine: z.string().optional(),
+        voiceApiKey: z.string().optional(),
         voiceInputSensitivity: z.number().optional(),
         voiceOutputSpeed: z.number().optional(),
         voiceOutputStyle: z.string().optional(),
@@ -295,9 +306,11 @@ export const appRouter = router({
         minFaceSize: z.number().optional(),
         faceTrackingSmoothing: z.number().optional(),
         multiFaceMatch: z.boolean().optional(),
+        databaseStorageLocation: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        return await db.upsertSettings(ctx.user.id, input);
+        await db.upsertSettings(ctx.user.id, input);
+        return { success: true };
       }),
   }),
 
@@ -306,7 +319,7 @@ export const appRouter = router({
     message: protectedProcedure
       .input(z.object({
         message: z.string(),
-        language: z.enum(['en', 'ja']),
+        language: z.enum(['en', 'ja']).optional(),
         context: z.object({
           currentPage: z.string().optional(),
         }).optional(),
@@ -317,7 +330,7 @@ export const appRouter = router({
         const systemPrompt = settings?.llmSystemPrompt || 
           (input.language === 'ja' 
             ? 'あなたはAyonix顔認識システムのAIアシスタントです。ユーザーの質問に親切に答え、システムの使い方を説明してください。'
-            : 'You are an AI assistant for the Ayonix Face Recognition System. Help users with questions about enrollment, verification, and system usage in a friendly, conversational tone.');
+            : 'You are an AI assistant for the Ayonix Face Recognition System. Help users with questions and explain how to use the system.');
 
         const response = await invokeLLM({
           messages: [
@@ -326,10 +339,8 @@ export const appRouter = router({
           ],
         });
 
-        const content = response.choices[0]?.message?.content || 'Sorry, I could not process your request.';
-        
         return {
-          response: typeof content === 'string' ? content : JSON.stringify(content),
+          response: response.choices[0]?.message?.content || 'Sorry, I could not generate a response.',
         };
       }),
   }),
@@ -354,10 +365,7 @@ export const appRouter = router({
           });
         }
         
-        return {
-          text: result.text,
-          language: result.language,
-        };
+        return result;
       }),
   }),
 });

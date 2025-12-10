@@ -97,3 +97,30 @@
 - [x] Test enrollment with real webcam
 - [x] Test verification with real webcam
 - [x] Verify face matching works correctly
+
+## Voice Conversation Implementation
+- [x] Add voice recording functionality in ChatAssistant
+- [x] Implement audio upload to S3
+- [x] Integrate voice transcription API (Japanese/English)
+- [x] Add text-to-speech for LLM responses
+- [x] Create push-to-talk UI with microphone button
+- [x] Add language selection (Japanese/English) in voice settings
+- [ ] Test voice conversation flow
+
+## Independent Authentication
+- [ ] Remove Manus OAuth dependency
+- [ ] Create user registration page with email/password
+- [ ] Implement login page with email/password
+- [ ] Add password hashing with bcrypt
+- [ ] Update session management for independent auth
+- [ ] Add "Forgot Password" functionality
+- [ ] Update all protected routes to use new auth
+- [ ] Test registration and login flow
+
+## First-Time Registration
+- [x] Create registration page with profile form
+- [x] Add profile completion check in auth flow
+- [x] Redirect first-time users to registration
+- [x] Save profile information to database
+- [ ] Test registration flow
+- [ ] Create checkpoint and push to GitHub

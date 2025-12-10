@@ -9,6 +9,7 @@ import Enrollees from "@/pages/Enrollees";
 import Verification from "@/pages/Verification";
 import Events from "@/pages/Events";
 import Settings from "@/pages/Settings";
+import Register from "@/pages/Register";
 import ChatAssistant from "@/components/ChatAssistant";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -27,6 +28,12 @@ function AuthenticatedApp() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // Redirect to registration if profile not completed
+  if (user && !user.profileCompleted && window.location.pathname !== '/register') {
+    window.location.href = '/register';
+    return null;
   }
 
   if (!user) {
@@ -52,6 +59,7 @@ function AuthenticatedApp() {
         <main className="flex-1 p-6 lg:p-8">
           <Switch>
             <Route path="/" component={Dashboard} />
+            <Route path="/register" component={Register} />
             <Route path="/enrollment" component={Enrollment} />
             <Route path="/enrollees" component={Enrollees} />
             <Route path="/verification" component={Verification} />

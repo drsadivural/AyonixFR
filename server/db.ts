@@ -84,6 +84,15 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 }
 
+export async function updateUserProfile(userId: number, data: { name?: string; email?: string | null; profileCompleted?: boolean }) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  await db.update(users).set(data).where(eq(users.id, userId));
+}
+
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {
