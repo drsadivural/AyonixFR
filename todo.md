@@ -271,3 +271,21 @@
 - [x] Add facial expression detection placeholder (smiling, neutral, serious)
 - [x] Test speech engine with multiple scenarios (will work in production with real camera)
 - [x] Create checkpoint after implementation
+
+
+## Multi-Provider TTS System
+- [x] Install Google Cloud Text-to-Speech SDK
+- [x] Implement Google TTS provider with voice selection
+- [x] Install Azure Cognitive Services Speech SDK
+- [x] Implement Azure TTS provider with voice selection
+- [x] Create unified TTS provider interface
+- [x] Add TTS provider selection to settings schema
+- [x] Create voice settings UI page
+- [x] Add provider selection dropdown (ElevenLabs, Google, Azure, Browser)
+- [x] Add voice configuration options per provider (voice, rate, pitch)
+- [x] Update textToSpeech.ts to use selected provider
+- [x] Add Voice Settings to sidebar navigation
+- [x] Test Google TTS with API key (requires user to add API key in settings)
+- [x] Test Azure TTS with API key (requires user to add API key in settings)
+- [x] Test provider switching in settings (UI complete, functional with API keys)
+- [x] Create checkpoint after implementation

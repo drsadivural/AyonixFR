@@ -127,6 +127,12 @@ export const settings = mysqlTable("settings", {
   voiceOutputSpeed: int("voiceOutputSpeed").default(100), // 50-200
   voiceOutputStyle: varchar("voiceOutputStyle", { length: 50 }).default("conversational"),
   
+  // TTS Provider Settings
+  ttsProvider: varchar("ttsProvider", { length: 50 }).default("browser"), // 'elevenlabs', 'google', 'azure', 'browser'
+  ttsVoiceName: varchar("ttsVoiceName", { length: 100 }), // Provider-specific voice ID
+  ttsSpeakingRate: int("ttsSpeakingRate").default(100), // 50-200, divide by 100 for actual value
+  ttsPitch: int("ttsPitch").default(0), // -20 to +20
+  
   // Face Recognition Settings
   matchThreshold: int("matchThreshold").default(75), // 0-100, divide by 100 for actual value
   minFaceSize: int("minFaceSize").default(80), // pixels
