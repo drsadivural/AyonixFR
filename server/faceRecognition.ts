@@ -7,6 +7,32 @@
  */
 
 /**
+ * Calculate cosine similarity between two face embeddings
+ * Returns a value between -1 and 1, where 1 means identical
+ */
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length) {
+    throw new Error('Embeddings must have the same length');
+  }
+  
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i]! * b[i]!;
+    normA += a[i]! * a[i]!;
+    normB += b[i]! * b[i]!;
+  }
+  
+  if (normA === 0 || normB === 0) {
+    return 0;
+  }
+  
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+/**
  * Calculate Euclidean distance between two face embeddings
  */
 function euclideanDistance(a: number[], b: number[]): number {
@@ -41,15 +67,16 @@ export function findBestMatch(
     return { matched: false };
   }
   
-  let bestMatch: { id: number; distance: number; name: string; surname: string } | null = null;
+  let bestMatch: { id: number; similarity: number; name: string; surname: string } | null = null;
   
   for (const stored of storedEmbeddings) {
-    const distance = euclideanDistance(queryEmbedding, stored.embedding);
+    // Use cosine similarity (higher is better)
+    const similarity = cosineSimilarity(queryEmbedding, stored.embedding);
     
-    if (!bestMatch || distance < bestMatch.distance) {
+    if (!bestMatch || similarity > bestMatch.similarity) {
       bestMatch = {
         id: stored.id,
-        distance,
+        similarity,
         name: stored.name,
         surname: stored.surname,
       };
@@ -60,9 +87,10 @@ export function findBestMatch(
     return { matched: false };
   }
   
-  // Lower distance = better match. Typical threshold is 0.6
-  const matched = bestMatch.distance < threshold;
-  const confidence = Math.round((1 - bestMatch.distance) * 100);
+  // Higher similarity = better match. Typical threshold is 0.6 (60% similarity)
+  // Convert threshold to similarity scale (0.6 threshold = 0.6 similarity)
+  const matched = bestMatch.similarity >= threshold;
+  const confidence = Math.round(bestMatch.similarity * 100);
   
   return {
     matched,

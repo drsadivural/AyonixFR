@@ -89,3 +89,11 @@
 - [x] Add real-time 3D landmark visualization on video stream
 - [x] Test accuracy with real face images
 - [x] Update GitHub repository with production implementation
+
+## Bug Fixes
+- [x] Debug verification failure issue (fixed cosine similarity)
+- [x] Add 3D landmarks visualization overlay on enrollment video
+- [x] Add 3D landmarks visualization overlay on verification video
+- [x] Test enrollment with real webcam
+- [x] Test verification with real webcam
+- [x] Verify face matching works correctly

@@ -1,31 +1,36 @@
-import { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { trpc } from "@/lib/trpc";
-import { Camera, Loader2, CheckCircle, XCircle } from "lucide-react";
-import { generateMockEmbedding } from "@/lib/faceDetection";
-import { toast } from "sonner";
+import { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Camera, CheckCircle2, XCircle, User } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
+import { toast } from 'sonner';
 
 export default function Verification() {
   const [isVerifying, setIsVerifying] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraSource, setCameraSource] = useState('webcam');
-  const [lastResult, setLastResult] = useState<any>(null);
+  const [matchResults, setMatchResults] = useState<any[]>([]);
+  const [landmarks, setLandmarks] = useState<Array<{x: number, y: number, z: number}> | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const [landmarksImageData, setLandmarksImageData] = useState<string | null>(null);
 
   const { data: settings } = trpc.settings.get.useQuery();
-  
+
   const verifyMutation = trpc.verification.verify.useMutation({
     onSuccess: (data) => {
-      setLastResult(data);
+      setMatchResults(data.matches);
       if (data.matches.length > 0) {
         toast.success(`Match found: ${data.matches[0]?.name} ${data.matches[0]?.surname}`);
+      } else if (data.detectedFaces > 0) {
+        toast.error('No match found in database');
       } else {
-        toast.info('No match found in database');
+        toast.error('No face detected');
       }
     },
     onError: (error) => {
@@ -33,40 +38,159 @@ export default function Verification() {
     },
   });
 
-  const startCamera = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+  const { data: landmarksData } = trpc.verification.getLandmarks.useQuery(
+    { imageBase64: landmarksImageData || '' },
+    { enabled: !!landmarksImageData }
+  );
+
+  useEffect(() => {
+    if (landmarksData && landmarksData.length > 0) {
+      // Get landmarks for all detected faces
+      const allLandmarks = landmarksData.flatMap(face => face.landmarks);
+      if (allLandmarks.length > 0) {
+        setLandmarks(allLandmarks);
       }
-      setIsVerifying(true);
+    }
+  }, [landmarksData]);
+
+  const startVerification = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user'
+        } 
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        setIsVerifying(true);
+        setMatchResults([]);
+        
+        // Start landmark detection loop
+        videoRef.current.onloadedmetadata = () => {
+          detectLandmarksLoop();
+        };
+      }
     } catch (error) {
       toast.error('Failed to access camera');
       console.error('Camera error:', error);
     }
   };
 
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
+  const detectLandmarksLoop = () => {
+    if (!videoRef.current || !overlayCanvasRef.current || !isVerifying) {
+      return;
+    }
+
+    const video = videoRef.current;
+    const overlayCanvas = overlayCanvasRef.current;
+    const ctx = overlayCanvas.getContext('2d');
+
+    if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      animationFrameRef.current = requestAnimationFrame(detectLandmarksLoop);
+      return;
+    }
+
+    // Set overlay canvas size to match video
+    overlayCanvas.width = video.videoWidth;
+    overlayCanvas.height = video.videoHeight;
+
+    // Clear previous drawings
+    ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+    // Draw landmarks if available
+    if (landmarks && landmarks.length > 0) {
+      ctx.fillStyle = '#3b82f6';
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 1;
+
+      // Draw all landmark points
+      landmarks.forEach((landmark) => {
+        const x = landmark.x;
+        const y = landmark.y;
+        
+        // Draw point
+        ctx.beginPath();
+        ctx.arc(x, y, 1, 0, 2 * Math.PI);
+        ctx.fill();
+      });
+
+      // Draw face mesh connections (simplified - key facial features)
+      const drawConnection = (idx1: number, idx2: number) => {
+        if (landmarks[idx1] && landmarks[idx2]) {
+          ctx.beginPath();
+          ctx.moveTo(landmarks[idx1].x, landmarks[idx1].y);
+          ctx.lineTo(landmarks[idx2].x, landmarks[idx2].y);
+          ctx.stroke();
+        }
+      };
+
+      // Draw face oval
+      const faceOval = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109];
+      for (let i = 0; i < faceOval.length - 1; i++) {
+        drawConnection(faceOval[i]!, faceOval[i + 1]!);
+      }
+
+      // Draw left eye
+      const leftEye = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
+      for (let i = 0; i < leftEye.length - 1; i++) {
+        drawConnection(leftEye[i]!, leftEye[i + 1]!);
+      }
+
+      // Draw right eye
+      const rightEye = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398];
+      for (let i = 0; i < rightEye.length - 1; i++) {
+        drawConnection(rightEye[i]!, rightEye[i + 1]!);
+      }
+
+      // Draw lips
+      const lips = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
+      for (let i = 0; i < lips.length - 1; i++) {
+        drawConnection(lips[i]!, lips[i + 1]!);
+      }
+
+      // Draw nose
+      drawConnection(1, 2);
+      drawConnection(2, 98);
+      drawConnection(98, 327);
+    }
+
+    // Continue loop
+    animationFrameRef.current = requestAnimationFrame(detectLandmarksLoop);
+  };
+
+  const stopVerification = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
     setIsVerifying(false);
+    setLandmarks(null);
+    setLandmarksImageData(null);
   };
 
   const captureAndVerify = () => {
     if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
       const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
+
       if (ctx) {
         ctx.drawImage(video, 0, 0);
         const imageData = canvas.toDataURL('image/jpeg');
+        
+        // Get landmarks for visualization
+        setLandmarksImageData(imageData);
         
         // Face embeddings will be extracted by Python service on the backend
         verifyMutation.mutate({
@@ -80,182 +204,161 @@ export default function Verification() {
 
   useEffect(() => {
     return () => {
-      stopCamera();
+      stopVerification();
     };
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Face Verification</h1>
-        <p className="text-muted-foreground mt-2">
-          Verify faces against enrolled database
-        </p>
+        <h1 className="text-3xl font-bold">Face Verification</h1>
+        <p className="text-muted-foreground">Real-time face matching against enrolled database</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Camera Section */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Live Camera Feed</CardTitle>
-                  <CardDescription>Real-time face detection and verification</CardDescription>
-                </div>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Live Camera Feed</CardTitle>
+            <CardDescription>
+              <div className="flex items-center gap-4 mt-2">
+                <span>Camera Source:</span>
                 <Select value={cameraSource} onValueChange={setCameraSource}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-[200px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="webcam">Webcam</SelectItem>
                     <SelectItem value="external">External Camera</SelectItem>
+                    <SelectItem value="mobile">Mobile Device</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="video-container">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full rounded-lg bg-black"
-                />
-                <canvas ref={canvasRef} className="hidden" />
-              </div>
-
-              <div className="flex gap-2">
-                {!isVerifying ? (
-                  <Button onClick={startCamera} className="flex-1">
-                    <Camera className="mr-2 h-4 w-4" />
-                    Start Camera
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+              {!isVerifying && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Button onClick={startVerification} size="lg">
+                    <Camera className="mr-2 h-5 w-5" />
+                    Start Verification
                   </Button>
-                ) : (
-                  <>
-                    <Button
-                      onClick={captureAndVerify}
-                      disabled={verifyMutation.isPending}
-                      className="flex-1"
-                    >
-                      {verifyMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Verifying...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Verify Face
-                        </>
-                      )}
-                    </Button>
-                    <Button onClick={stopCamera} variant="outline">
-                      Stop
-                    </Button>
-                  </>
-                )}
-              </div>
-
-              {lastResult && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    {lastResult.matches.length > 0 ? (
-                      <>
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="font-semibold text-green-600">Match Found</span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-5 w-5 text-red-600" />
-                        <span className="font-semibold text-red-600">No Match</span>
-                      </>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Detected {lastResult.detectedFaces} face(s)
-                  </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
+              
+              {isVerifying && (
+                <>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  <canvas
+                    ref={overlayCanvasRef}
+                    className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                    style={{ mixBlendMode: 'screen' }}
+                  />
+                </>
+              )}
+              
+              <canvas ref={canvasRef} className="hidden" />
+            </div>
 
-        {/* Results Section */}
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Verification Results</CardTitle>
-              <CardDescription>Match details and confidence</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {lastResult && lastResult.matches.length > 0 ? (
-                <div className="space-y-4">
-                  {lastResult.matches.map((match: any, index: number) => (
-                    <div key={index} className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-lg mb-2">
-                        {match.name} {match.surname}
-                      </h3>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Confidence</span>
-                          <Badge variant="default">{match.confidence}%</Badge>
+            {isVerifying && (
+              <div className="flex gap-2">
+                <Button onClick={captureAndVerify} className="flex-1" disabled={verifyMutation.isPending}>
+                  {verifyMutation.isPending ? 'Verifying...' : 'Capture & Verify'}
+                </Button>
+                <Button onClick={stopVerification} variant="outline">
+                  Stop
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Match Results Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Match Results</CardTitle>
+            <CardDescription>Detected faces and matches</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {matchResults.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No matches yet</p>
+                <p className="text-sm">Start verification to see results</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {matchResults.map((match, index) => (
+                  <Card key={index} className="border-2 border-green-500">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          <CardTitle className="text-lg">Match Found</CardTitle>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Enrollee ID</span>
-                          <span className="text-sm font-medium">{match.enrolleeId}</span>
+                        <Badge variant="default" className="bg-green-500">
+                          {match.confidence}%
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Name</p>
+                        <p className="font-medium">{match.name} {match.surname}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Enrollee ID</p>
+                        <p className="font-mono text-sm">{match.enrolleeId}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Confidence</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-muted rounded-full h-2">
+                            <div 
+                              className="bg-green-500 h-2 rounded-full transition-all"
+                              style={{ width: `${match.confidence}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium">{match.confidence}%</span>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : lastResult && lastResult.detectedFaces > 0 ? (
-                <div className="text-center py-8">
-                  <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
-                    Face detected but no match found in database
-                  </p>
-                </div>
-              ) : lastResult ? (
-                <div className="text-center py-8">
-                  <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
-                    No faces detected in the image
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Camera className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
-                    Start camera and verify a face to see results
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Settings Info */}
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Current Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Match Threshold</span>
-                <span className="font-medium">{settings?.matchThreshold || 75}%</span>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Min Face Size</span>
-                <span className="font-medium">{settings?.minFaceSize || 80}px</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Multi-Face Match</span>
-                <span className="font-medium">{settings?.multiFaceMatch ? 'Enabled' : 'Disabled'}</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Settings Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Verification Settings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Match Threshold</p>
+              <p className="text-2xl font-bold">{settings?.matchThreshold || 75}%</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Min Face Size</p>
+              <p className="text-2xl font-bold">{settings?.minFaceSize || 80}px</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Multi-Face Match</p>
+              <p className="text-2xl font-bold">{settings?.multiFaceMatch ? 'ON' : 'OFF'}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
