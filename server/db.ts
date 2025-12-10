@@ -1,7 +1,7 @@
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
-  InsertUser, users, 
+  InsertUser, User, users, 
   enrollees, InsertEnrollee, Enrollee,
   recognitionLogs, InsertRecognitionLog, RecognitionLog,
   events, InsertEvent, Event,
@@ -250,7 +250,7 @@ export async function createUser(user: { name: string; email: string; password: 
     loginMethod: user.loginMethod,
     role: user.role,
     profileCompleted: true,
-  });
+  } as any);
 
   return Number(result[0].insertId);
 }
@@ -269,17 +269,17 @@ export async function updatePasswordResetToken(userId: number, token: string, ex
   await db.update(users).set({ 
     resetToken: token, 
     resetTokenExpiry: expiry 
-  }).where(eq(users.id, userId));
+  } as any).where(eq(users.id, userId));
 }
 
-export async function getUserByResetToken(token: string) {
+export async function getUserByResetToken(token: string): Promise<User | undefined> {
   const db = await getDb();
   if (!db) {
     console.warn("[Database] Cannot get user: database not available");
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.resetToken, token)).limit(1);
+  const result = await db.select().from(users).where(eq((users as any).resetToken, token)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -287,7 +287,7 @@ export async function updatePassword(userId: number, hashedPassword: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
+  await db.update(users).set({ password: hashedPassword } as any).where(eq(users.id, userId));
 }
 
 export async function clearPasswordResetToken(userId: number) {
@@ -297,7 +297,7 @@ export async function clearPasswordResetToken(userId: number) {
   await db.update(users).set({ 
     resetToken: null, 
     resetTokenExpiry: null 
-  }).where(eq(users.id, userId));
+  } as any).where(eq(users.id, userId));
 }
 
 // ============= ENROLLEE OPERATIONS =============
@@ -362,7 +362,7 @@ export async function createRecognitionLog(log: InsertRecognitionLog): Promise<R
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(recognitionLogs).values(log);
+  const result = await db.insert(recognitionLogs).values(log as any);
   const insertedId = Number(result[0].insertId);
   
   const inserted = await db.select().from(recognitionLogs).where(eq(recognitionLogs.id, insertedId)).limit(1);

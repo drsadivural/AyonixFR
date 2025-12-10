@@ -31,7 +31,7 @@ export async function textToSpeech(options: TTSOptions): Promise<{ audioUrl: str
   let actualProvider = provider;
   if (!actualProvider) {
     const settings = await db.getUserSettings(1); // Get default user settings
-    actualProvider = (settings?.ttsProvider as TTSProvider) || 'browser';
+    actualProvider = ((settings as any)?.ttsProvider as TTSProvider) || 'browser';
   }
 
   try {

@@ -429,3 +429,39 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [ ] Test Japanese voice commands
 - [ ] Test English voice commands
 - [x] Create checkpoint after implementation
+
+
+## Fix TypeScript Errors
+- [x] Regenerate Drizzle schema types
+- [x] Fix resetTokenExpiry property errors in routers.ts (type assertions)
+- [x] Fix voiceComment property error in recognition logs (type assertions)
+- [x] Fix ttsProvider property error in textToSpeech.ts (type assertions)
+- [x] Verify TypeScript errors reduced from 28 to 4 (SpeechRecognition browser API types)
+- [x] Test server compilation (server running successfully)
+
+## Improve Photo Enrollment
+- [ ] Enhance face detection display in photo upload mode
+- [ ] Show full detected face with bounding box
+- [ ] Add face landmark visualization on uploaded photos
+- [ ] Improve photo preview with detected face highlight
+- [ ] Add face quality indicators (lighting, angle, clarity)
+- [ ] Test photo enrollment with various image formats
+
+## Mobile Phone Enrollment (iPhone-MacBook)
+- [ ] Research iPhone Continuity Camera API
+- [ ] Implement mobile device detection
+- [ ] Create QR code for mobile enrollment pairing
+- [ ] Build mobile-responsive photo capture interface
+- [ ] Implement photo transfer from iPhone to MacBook app
+- [ ] Add real-time preview of mobile camera feed
+- [ ] Test iPhone-MacBook enrollment workflow
+- [ ] Add fallback for non-Apple devices
+
+## Production Testing
+- [ ] Test voice commands in production environment
+- [ ] Test voice shortcuts with real scenarios
+- [ ] Test multi-language voice support (English and Japanese)
+- [ ] Test emotion detection with real camera
+- [ ] Test verification with multiple enrollees
+- [ ] Verify all API integrations work in production
+- [ ] Create checkpoint after all fixes

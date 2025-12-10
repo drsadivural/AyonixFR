@@ -47,21 +47,21 @@ export default function Verification() {
         toast.success(`Match found: ${match?.name} ${match?.surname}`);
         
         // Play voice comment if available
-        if (match.voiceComment) {
+        if ((match as any).voiceComment) {
           // Add to chat history
           setVoiceComments(prev => [
-            { text: match.voiceComment, timestamp: new Date(), personName: `${match.name} ${match.surname}` },
+            { text: (match as any).voiceComment, timestamp: new Date(), personName: `${match.name} ${match.surname}` },
             ...prev
           ]);
           
           // Play audio
-          if (match.audioUrl && audioRef.current) {
+          if ((match as any).audioUrl && audioRef.current) {
             // Use server-generated audio
-            audioRef.current.src = match.audioUrl;
+            audioRef.current.src = (match as any).audioUrl;
             audioRef.current.play().catch(err => console.error('Audio playback failed:', err));
-          } else if (match.useBrowserTTS && 'speechSynthesis' in window) {
+          } else if ((match as any).useBrowserTTS && 'speechSynthesis' in window) {
             // Fallback to browser TTS
-            const utterance = new SpeechSynthesisUtterance(match.voiceComment);
+            const utterance = new SpeechSynthesisUtterance((match as any).voiceComment);
             utterance.rate = 1.0;
             utterance.pitch = 1.0;
             utterance.volume = 1.0;

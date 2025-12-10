@@ -22,10 +22,10 @@ export default function VoiceSettings() {
     },
   });
 
-  const [ttsProvider, setTtsProvider] = useState<string>(settings?.ttsProvider || 'browser');
-  const [ttsVoiceName, setTtsVoiceName] = useState<string>(settings?.ttsVoiceName || '');
-  const [ttsSpeakingRate, setTtsSpeakingRate] = useState<number>(settings?.ttsSpeakingRate || 100);
-  const [ttsPitch, setTtsPitch] = useState<number>(settings?.ttsPitch || 0);
+  const [ttsProvider, setTtsProvider] = useState<string>((settings as any)?.ttsProvider || 'browser');
+  const [ttsVoiceName, setTtsVoiceName] = useState<string>((settings as any)?.ttsVoiceName || '');
+  const [ttsSpeakingRate, setTtsSpeakingRate] = useState<number>((settings as any)?.ttsSpeakingRate || 100);
+  const [ttsPitch, setTtsPitch] = useState<number>((settings as any)?.ttsPitch || 0);
 
   const handleSave = () => {
     updateMutation.mutate({
@@ -33,7 +33,7 @@ export default function VoiceSettings() {
       ttsVoiceName,
       ttsSpeakingRate,
       ttsPitch,
-    });
+    } as any);
   };
 
   const getVoiceOptions = () => {

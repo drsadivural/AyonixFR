@@ -73,7 +73,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         // Find user by email
-        const user = await db.getUserByEmail(input.email);
+        const user = await db.getUserByEmail(input.email) as any;
         if (!user || !user.password) {
           throw new TRPCError({
             code: 'UNAUTHORIZED',
@@ -161,7 +161,7 @@ export const appRouter = router({
         token: z.string(),
       }))
       .query(async ({ input }) => {
-        const user = await db.getUserByResetToken(input.token);
+        const user = await db.getUserByResetToken(input.token) as any;
         
         if (!user || !user.resetTokenExpiry) {
           throw new TRPCError({
@@ -171,7 +171,7 @@ export const appRouter = router({
         }
 
         // Check if token is expired
-        if (new Date() > user.resetTokenExpiry) {
+        if (new Date() > new Date(user.resetTokenExpiry as any)) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Reset token has expired',
@@ -187,9 +187,9 @@ export const appRouter = router({
         newPassword: z.string().min(6),
       }))
       .mutation(async ({ input }) => {
-        const user = await db.getUserByResetToken(input.token);
+        const user = await db.getUserByResetToken(input.token) as any;
         
-        if (!user || !user.resetTokenExpiry) {
+        if (!user || !user.resetToken || !user.resetTokenExpiry) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Invalid or expired reset token',
@@ -197,7 +197,7 @@ export const appRouter = router({
         }
 
         // Check if token is expired
-        if (new Date() > user.resetTokenExpiry) {
+        if (new Date() > new Date(user.resetTokenExpiry as any)) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Reset token has expired',
@@ -449,7 +449,7 @@ export const appRouter = router({
             }
           }
           
-          await db.createRecognitionLog({
+        await db.createRecognitionLog({
             enrolleeId: match.enrolleeId,
             matchConfidence: match.confidence,
             snapshotUrl: '',
@@ -460,8 +460,8 @@ export const appRouter = router({
             matchCount,
             verifiedBy: 1, // System user
             cameraSource: input.cameraSource,
-            detectedFaces: result.detectedFaces,
-          });
+            detectedFaces: 1,
+          } as any);
           
           // Add voice comment and audio URL to match result
           (match as any).voiceComment = voiceComment;

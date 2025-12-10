@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE settings ADD COLUMN IF NOT EXISTS ttsProvider VARCHAR(50) DEFAULT 'browser', ADD COLUMN IF NOT EXISTS ttsVoiceName VARCHAR(100), ADD COLUMN IF NOT EXISTS ttsSpeakingRate INT DEFAULT 100, ADD COLUMN IF NOT EXISTS ttsPitch INT DEFAULT 0;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2caqAJKeFKiqnGW.4deaa0f2b014 --database 9fQS7XhPx6Ju9hKz6B9Eak --execute ALTER TABLE settings ADD COLUMN IF NOT EXISTS ttsProvider VARCHAR(50) DEFAULT 'browser', ADD COLUMN IF NOT EXISTS ttsVoiceName VARCHAR(100), ADD COLUMN IF NOT EXISTS ttsSpeakingRate INT DEFAULT 100, ADD COLUMN IF NOT EXISTS ttsPitch INT DEFAULT 0;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1539
+}
