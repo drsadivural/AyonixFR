@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import NotFound from "@/pages/NotFound";
 import Dashboard from "@/pages/Dashboard";
 import Enrollment from "@/pages/Enrollment";
+import BatchEnrollment from "@/pages/BatchEnrollment";
 import Enrollees from "@/pages/Enrollees";
 import Verification from "@/pages/Verification";
 import Events from "@/pages/Events";
@@ -61,6 +62,7 @@ function AuthenticatedApp() {
             <Route path="/" component={Dashboard} />
             <Route path="/register" component={Register} />
             <Route path="/enrollment" component={Enrollment} />
+          <Route path="/batch-enrollment" component={BatchEnrollment} />
             <Route path="/enrollees" component={Enrollees} />
             <Route path="/verification" component={Verification} />
             <Route path="/events" component={Events} />

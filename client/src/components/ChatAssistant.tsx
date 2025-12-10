@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { MessageCircle, Send, Mic, Loader2, X } from "lucide-react";
+import { MessageCircle, Send, Mic, MicOff, Volume2, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
+
 
 interface Message {
   role: 'user' | 'assistant';
@@ -20,18 +21,54 @@ export default function ChatAssistant() {
   const [input, setInput] = useState('');
   const [language, setLanguage] = useState<'en' | 'ja'>('en');
   const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const chatMutation = trpc.chat.message.useMutation({
     onSuccess: (data) => {
-      setMessages(prev => [...prev, {
+      const assistantMessage: Message = {
         role: 'assistant',
         content: String(data.response),
         timestamp: new Date(),
-      }]);
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+      
+      // Text-to-speech
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(data.response);
+        utterance.lang = language === 'ja' ? 'ja-JP' : 'en-US';
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+      }
     },
     onError: (error) => {
       toast.error(`Chat error: ${error.message}`);
+    },
+  });
+
+  const transcribeMutation = trpc.voice.transcribe.useMutation({
+    onSuccess: (data) => {
+      const transcribedText = data.text;
+      setInput(transcribedText);
+      
+      // Automatically send the transcribed message
+      const userMessage: Message = {
+        role: 'user',
+        content: transcribedText,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, userMessage]);
+      
+      chatMutation.mutate({
+        message: transcribedText,
+        language,
+      });
+    },
+    onError: (error) => {
+      toast.error(`Transcription error: ${error.message}`);
     },
   });
 
@@ -42,6 +79,77 @@ export default function ChatAssistant() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        
+        // Check file size (16MB limit)
+        if (audioBlob.size > 16 * 1024 * 1024) {
+          toast.error('Audio file too large (max 16MB)');
+          return;
+        }
+
+        // Convert to base64
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64Audio = reader.result as string;
+          
+          try {
+            // Upload to S3 using tRPC
+            const uploadResult = await trpc.voice.uploadAudio.mutate({
+              audioBase64: base64Audio,
+            });
+            const audioUrl = uploadResult.url;
+            
+            // Transcribe
+            transcribeMutation.mutate({
+              audioUrl,
+              language,
+            });
+          } catch (error) {
+            toast.error('Failed to process audio');
+          }
+        };
+        reader.readAsDataURL(audioBlob);
+        
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      toast.success('Recording started');
+    } catch (error) {
+      toast.error('Failed to access microphone');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      toast.success('Recording stopped, processing...');
+    }
+  };
+
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  };
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -69,11 +177,6 @@ export default function ChatAssistant() {
       e.preventDefault();
       handleSend();
     }
-  };
-
-  const handleVoiceInput = () => {
-    toast.info('Voice input feature coming soon');
-    // Voice recording implementation will be added in phase 4
   };
 
   if (!isOpen) {
@@ -157,23 +260,34 @@ export default function ChatAssistant() {
         {/* Input */}
         <div className="flex gap-2">
           <Button
-            variant="outline"
+            variant={isRecording ? 'destructive' : 'outline'}
             size="icon"
-            onClick={handleVoiceInput}
-            disabled={isRecording}
+            onClick={isRecording ? stopRecording : startRecording}
+            disabled={transcribeMutation.isPending}
           >
-            <Mic className={`h-4 w-4 ${isRecording ? 'text-red-500' : ''}`} />
+            {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           </Button>
+          
+          {isSpeaking && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={stopSpeaking}
+            >
+              <Volume2 className="h-4 w-4" />
+            </Button>
+          )}
+          
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={language === 'ja' ? 'メッセージを入力...' : 'Type a message...'}
-            disabled={chatMutation.isPending}
+            disabled={chatMutation.isPending || isRecording}
           />
           <Button
             onClick={handleSend}
-            disabled={!input.trim() || chatMutation.isPending}
+            disabled={!input.trim() || chatMutation.isPending || isRecording}
             size="icon"
           >
             <Send className="h-4 w-4" />

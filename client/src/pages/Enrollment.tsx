@@ -10,6 +10,7 @@ import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
+import FaceQualityIndicator from '@/components/FaceQualityIndicator';
 
 type EnrollmentMethod = 'camera' | 'upload' | 'mobile';
 
@@ -19,6 +20,7 @@ export default function Enrollment() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [showMoreInfo, setShowMoreInfo] = useState(false);
   const [landmarks, setLandmarks] = useState<Array<{x: number, y: number, z: number}> | null>(null);
+  const [faceQuality, setFaceQuality] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -236,6 +238,12 @@ export default function Enrollment() {
       return;
     }
 
+    // Check face quality
+    if (faceQuality && faceQuality.overall_score < 50) {
+      toast.error('Image quality is too low. Please capture a better image.');
+      return;
+    }
+
     // Face embedding will be extracted by Python service on the backend
     enrollMutation.mutate({
       ...formData,
@@ -372,6 +380,14 @@ export default function Enrollment() {
                 </div>
               </TabsContent>
             </Tabs>
+            
+            {/* Face Quality Indicator */}
+            {capturedImage && (
+              <FaceQualityIndicator 
+                imageBase64={capturedImage} 
+                onQualityChange={setFaceQuality}
+              />
+            )}
           </CardContent>
         </Card>
 

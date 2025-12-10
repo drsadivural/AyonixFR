@@ -105,7 +105,7 @@
 - [x] Add text-to-speech for LLM responses
 - [x] Create push-to-talk UI with microphone button
 - [x] Add language selection (Japanese/English) in voice settings
-- [ ] Test voice conversation flow
+- [x] Test voice conversation flow
 
 ## Independent Authentication
 - [ ] Remove Manus OAuth dependency
@@ -124,3 +124,32 @@
 - [x] Save profile information to database
 - [ ] Test registration flow
 - [ ] Create checkpoint and push to GitHub
+
+## Voice Conversation Feature
+- [x] Add microphone button in ChatAssistant
+- [x] Implement audio recording functionality
+- [x] Upload audio to S3 and get URL
+- [x] Integrate Whisper transcription (Japanese/English)
+- [x] Send transcribed text to LLM
+- [x] Implement text-to-speech for responses
+- [x] Add language toggle (Japanese/English)
+- [x] Test voice conversation flow
+
+## Face Quality Pre-Checks
+- [x] Add image quality analysis (sharpness, blur detection)
+- [x] Add lighting quality assessment
+- [x] Add face angle detection
+- [x] Display real-time quality indicators (green/yellow/red)
+- [x] Show quality scores and feedback messages
+- [x] Prevent enrollment if quality is too low
+- [x] Test quality checks with various images
+
+## Batch Enrollment
+- [x] Create batch enrollment UI with ZIP upload
+- [x] Add CSV template download
+- [x] Parse ZIP file and extract images
+- [x] Parse CSV mapping file
+- [x] Process multiple enrollments in parallel
+- [x] Show progress indicator
+- [x] Display success/error summary
+- [x] Test batch enrollment with sample data

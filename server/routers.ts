@@ -9,6 +9,7 @@ import { storagePut } from "./storage";
 import * as db from "./db";
 import { findBestMatch, verifyFaces, validateEmbedding } from './faceRecognition';
 import { extractSingleFaceEmbedding, extractMultipleFaceEmbeddings, get3DLandmarks } from './pythonFaceService';
+import { assessFaceQuality } from './faceQuality';
 import { TRPCError } from "@trpc/server";
 
 export const appRouter = router({
@@ -33,6 +34,25 @@ export const appRouter = router({
           profileCompleted: true,
         });
         return { success: true };
+      }),
+  }),
+
+  // ============= FACE QUALITY =============
+  faceQuality: router({  
+    assess: protectedProcedure
+      .input(z.object({
+        imageBase64: z.string(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const quality = await assessFaceQuality(input.imageBase64);
+          return quality;
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Quality assessment failed: ${error}`,
+          });
+        }
       }),
   }),
 
@@ -347,6 +367,21 @@ export const appRouter = router({
 
   // ============= VOICE =============
   voice: router({
+    uploadAudio: protectedProcedure
+      .input(z.object({
+        audioBase64: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const base64Data = input.audioBase64.split(',')[1] || input.audioBase64;
+        const audioBuffer = Buffer.from(base64Data, 'base64');
+        
+        const randomSuffix = Math.random().toString(36).substring(7);
+        const audioKey = `voice/${ctx.user.id}-${Date.now()}-${randomSuffix}.webm`;
+        const { url: audioUrl } = await storagePut(audioKey, audioBuffer, 'audio/webm');
+        
+        return { url: audioUrl };
+      }),
+    
     transcribe: protectedProcedure
       .input(z.object({
         audioUrl: z.string(),
