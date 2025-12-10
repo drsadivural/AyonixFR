@@ -220,3 +220,20 @@
 - [x] Render video element always (not conditionally) to ensure ref exists
 - [x] Test camera stream fixes (works in production, sandbox has no camera hardware)
 - [x] Create checkpoint after fix
+
+
+## Independent Authentication System
+- [x] Update user schema to add password field
+- [x] Add bcrypt for password hashing
+- [x] Create registration endpoint with email/password
+- [x] Create login endpoint with JWT token generation
+- [x] Update session management to use JWT instead of Manus OAuth
+- [x] Create registration page UI (name, surname, email, password)
+- [x] Create login page UI (email, password)
+- [x] Remove Manus OAuth redirect from App.tsx
+- [x] Update authenticateRequest to support both JWT and OAuth
+- [ ] Add "Forgot Password" functionality (future enhancement)
+- [x] Test registration flow
+- [x] Test login flow
+- [x] Test protected routes
+- [x] Create checkpoint after implementation

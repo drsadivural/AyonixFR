@@ -257,9 +257,29 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<User> {
-    // Regular authentication flow
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
+    
+    if (!sessionCookie) {
+      throw ForbiddenError("No session cookie");
+    }
+
+    // Try JWT-based auth first (for email/password users)
+    try {
+      const jwt = await import('jsonwebtoken');
+      const decoded = jwt.default.verify(sessionCookie, ENV.cookieSecret) as { userId: number };
+      
+      if (decoded.userId) {
+        const user = await db.getUserById(decoded.userId);
+        if (user) {
+          return user;
+        }
+      }
+    } catch (jwtError) {
+      // JWT verification failed, try OAuth session
+    }
+
+    // Fallback to OAuth session verification
     const session = await this.verifySession(sessionCookie);
 
     if (!session) {
@@ -293,7 +313,7 @@ class SDKServer {
     }
 
     await db.upsertUser({
-      openId: user.openId,
+      openId: user.openId!,
       lastSignedIn: signedInAt,
     });
 

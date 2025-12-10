@@ -12,18 +12,18 @@ import Verification from "@/pages/Verification";
 import Events from "@/pages/Events";
 import Settings from "@/pages/Settings";
 import Register from "@/pages/Register";
+import Login from "@/pages/Login";
 import UserManagement from "@/pages/UserManagement";
 import ChatAssistant from "@/components/ChatAssistant";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "./_core/hooks/useAuth";
-import { getLoginUrl } from "./const";
-import { Button } from "./components/ui/button";
 import { Loader2 } from "lucide-react";
 
 function AuthenticatedApp() {
   const { user, loading } = useAuth();
+  const [location] = useLocation();
 
   if (loading) {
     return (
@@ -33,25 +33,22 @@ function AuthenticatedApp() {
     );
   }
 
-  // Redirect to registration if profile not completed
-  if (user && !(user as any).profileCompleted && window.location.pathname !== '/register') {
-    window.location.href = '/register';
-    return null;
-  }
-
+  // Show login/register pages for unauthenticated users
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen space-y-4">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold mb-2">Ayonix Face Recognition</h1>
-          <p className="text-muted-foreground mb-6">
-            Professional biometric face recognition system
-          </p>
-        </div>
-        <Button onClick={() => window.location.href = getLoginUrl()}>
-          Sign In to Continue
-        </Button>
-      </div>
+      <Switch>
+        <Route path="/register" component={Register} />
+        <Route path="/login" component={Login} />
+        <Route>
+          {() => {
+            // Redirect to login if trying to access protected route
+            if (location !== '/login' && location !== '/register') {
+              window.location.href = '/register';
+            }
+            return <Register />;
+          }}
+        </Route>
+      </Switch>
     );
   }
 
@@ -62,10 +59,9 @@ function AuthenticatedApp() {
         <main className="flex-1 p-6 lg:p-8">
           <Switch>
             <Route path="/" component={Dashboard} />
-            <Route path="/register" component={Register} />
             <Route path="/enrollment" component={Enrollment} />
-          <Route path="/batch-enrollment" component={BatchEnrollment} />
-        <Route path="/similarity-search" component={SimilaritySearch} />
+            <Route path="/batch-enrollment" component={BatchEnrollment} />
+            <Route path="/similarity-search" component={SimilaritySearch} />
             <Route path="/enrollees" component={Enrollees} />
             <Route path="/verification" component={Verification} />
             <Route path="/events" component={Events} />

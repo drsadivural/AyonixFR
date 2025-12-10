@@ -12,17 +12,104 @@ import { extractSingleFaceEmbedding, extractMultipleFaceEmbeddings, get3DLandmar
 import { assessFaceQuality } from './faceQuality';
 import { TRPCError } from "@trpc/server";
 import { hasPermission, requireAdmin, requireOperatorOrAdmin, type UserRole } from './permissions';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from './_core/env';
 
 export const appRouter = router({
   system: systemRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    
+    register: publicProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        surname: z.string().min(1),
+        email: z.string().email(),
+        password: z.string().min(6),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Check if user already exists
+        const existingUser = await db.getUserByEmail(input.email);
+        if (existingUser) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'User with this email already exists',
+          });
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(input.password, 10);
+
+        // Create user
+        const userId = await db.createUser({
+          name: `${input.name} ${input.surname}`,
+          email: input.email,
+          password: hashedPassword,
+          loginMethod: 'email',
+          role: 'viewer', // Default role, first user should be manually promoted to admin
+        });
+
+        // Generate JWT token
+        const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+
+        // Set cookie
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, {
+          ...cookieOptions,
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        return { success: true, userId };
+      }),
+
+    login: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Find user by email
+        const user = await db.getUserByEmail(input.email);
+        if (!user || !user.password) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Invalid email or password',
+          });
+        }
+
+        // Verify password
+        const isValidPassword = await bcrypt.compare(input.password, user.password);
+        if (!isValidPassword) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Invalid email or password',
+          });
+        }
+
+        // Update last signed in
+        await db.updateUserLastSignedIn(user.id);
+
+        // Generate JWT token
+        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+
+        // Set cookie
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, {
+          ...cookieOptions,
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        return { success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
+      }),
+    
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    
     completeProfile: protectedProcedure
       .input(z.object({
         name: z.string().min(1),
