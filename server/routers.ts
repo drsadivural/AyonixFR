@@ -123,6 +123,94 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+
+    requestPasswordReset: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+      }))
+      .mutation(async ({ input }) => {
+        const user = await db.getUserByEmail(input.email);
+        
+        // Always return success to prevent email enumeration
+        if (!user) {
+          return { success: true, message: 'If an account exists with this email, a reset link will be sent.' };
+        }
+
+        // Generate reset token (random 32-byte hex string)
+        const resetToken = require('crypto').randomBytes(32).toString('hex');
+        const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+        // Save token to database
+        await db.updatePasswordResetToken(user.id, resetToken, resetTokenExpiry);
+
+        // In a real app, send email here
+        // For now, return the token (in production, this should be sent via email)
+        return { 
+          success: true, 
+          message: 'If an account exists with this email, a reset link will be sent.',
+          // TODO: Remove this in production - only for testing
+          resetToken: resetToken,
+          resetUrl: `/reset-password?token=${resetToken}`
+        };
+      }),
+
+    verifyResetToken: publicProcedure
+      .input(z.object({
+        token: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const user = await db.getUserByResetToken(input.token);
+        
+        if (!user || !user.resetTokenExpiry) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid or expired reset token',
+          });
+        }
+
+        // Check if token is expired
+        if (new Date() > user.resetTokenExpiry) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Reset token has expired',
+          });
+        }
+
+        return { valid: true, email: user.email };
+      }),
+
+    resetPassword: publicProcedure
+      .input(z.object({
+        token: z.string(),
+        newPassword: z.string().min(6),
+      }))
+      .mutation(async ({ input }) => {
+        const user = await db.getUserByResetToken(input.token);
+        
+        if (!user || !user.resetTokenExpiry) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid or expired reset token',
+          });
+        }
+
+        // Check if token is expired
+        if (new Date() > user.resetTokenExpiry) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Reset token has expired',
+          });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(input.newPassword, 10);
+
+        // Update password and clear reset token
+        await db.updatePassword(user.id, hashedPassword);
+        await db.clearPasswordResetToken(user.id);
+
+        return { success: true, message: 'Password has been reset successfully' };
+      }),
   }),
 
   // ============= FACE QUALITY =============

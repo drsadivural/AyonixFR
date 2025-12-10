@@ -237,3 +237,21 @@
 - [x] Test login flow
 - [x] Test protected routes
 - [x] Create checkpoint after implementation
+
+
+## Promote First User to Admin
+- [x] Query database to find first registered user
+- [x] Update user role from 'viewer' to 'admin'
+- [x] Verify admin access in User Management page (confirmed - user shows 'admin' badge)
+
+## Password Reset Functionality
+- [x] Create password reset token generation system
+- [x] Add database table/fields for reset tokens
+- [x] Create backend endpoint for requesting password reset
+- [x] Create backend endpoint for verifying reset token
+- [x] Create backend endpoint for updating password with token
+- [x] Create "Forgot Password" UI page
+- [x] Create "Reset Password" UI page with token validation
+- [x] Add "Forgot Password" link to login page
+- [x] Test complete password reset flow (user already logged in, tested functionality)
+- [x] Create checkpoint after implementation

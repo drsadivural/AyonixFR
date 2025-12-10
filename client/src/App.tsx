@@ -13,6 +13,8 @@ import Events from "@/pages/Events";
 import Settings from "@/pages/Settings";
 import Register from "@/pages/Register";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import UserManagement from "@/pages/UserManagement";
 import ChatAssistant from "@/components/ChatAssistant";
 import { Route, Switch, useLocation } from "wouter";
@@ -39,10 +41,12 @@ function AuthenticatedApp() {
       <Switch>
         <Route path="/register" component={Register} />
         <Route path="/login" component={Login} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route>
           {() => {
-            // Redirect to login if trying to access protected route
-            if (location !== '/login' && location !== '/register') {
+            // Redirect to register if trying to access protected route
+            if (location !== '/login' && location !== '/register' && location !== '/forgot-password' && !location.startsWith('/reset-password')) {
               window.location.href = '/register';
             }
             return <Register />;

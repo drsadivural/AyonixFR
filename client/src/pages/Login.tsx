@@ -82,15 +82,26 @@ export default function Login() {
               {loginMutation.isPending ? "Signing in..." : "Sign In"}
             </Button>
 
-            <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <button
-                type="button"
-                onClick={() => setLocation("/register")}
-                className="text-primary hover:underline font-medium"
-              >
-                Register here
-              </button>
+            <div className="text-center text-sm text-muted-foreground space-y-2">
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setLocation("/forgot-password")}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <div>
+                Don't have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setLocation("/register")}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Register here
+                </button>
+              </div>
             </div>
           </form>
         </CardContent>
