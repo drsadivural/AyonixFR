@@ -185,3 +185,29 @@
 - [x] Fix Settings voiceLanguage type
 - [x] Fix Verification landmarks type errors
 - [x] Fix db.ts audit logs import errors (temporarily disabled)
+
+## Role-Based Access Control (RBAC)
+- [x] Update user schema with role enum (admin, operator, viewer)
+- [x] Create role permissions matrix
+- [x] Add role check middleware in backend
+- [x] Implement permission checks for enrollment operations
+- [x] Implement permission checks for verification operations
+- [x] Implement permission checks for deletion operations
+- [x] Implement permission checks for settings management
+- [x] Create role-based UI components (usePermissions hook)
+- [x] Hide/disable features based on user role (sidebar filtering)
+- [x] Create user management page (admin only)
+- [x] Add role assignment functionality
+- [ ] Test all role permissions
+
+## User Management Page
+- [x] Create user management page UI with user list
+- [x] Add role badge display with icons (admin/operator/viewer)
+- [x] Implement role change dropdown for each user
+- [x] Add role permissions reference card
+- [x] Add backend router for user list and role updates
+- [x] Add permission checks (admin-only access)
+- [x] Add User Management to sidebar navigation (admin-only)
+- [x] Add role badge to sidebar footer showing current user role
+- [x] Write vitest tests for user management router
+- [x] Test all user management functionality

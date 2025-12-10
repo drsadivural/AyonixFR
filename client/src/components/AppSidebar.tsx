@@ -10,11 +10,12 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, UserPlus, Users, ScanFace, Activity, Settings, LogOut, FolderUp, GitCompare } from "lucide-react";
+import { LayoutDashboard, UserPlus, Users, ScanFace, Activity, Settings, LogOut, FolderUp, GitCompare, Shield } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
@@ -25,11 +26,13 @@ const menuItems = [
   { title: "Verification", icon: ScanFace, url: "/verification" },
   { title: "Events", icon: Activity, url: "/events" },
   { title: "Settings", icon: Settings, url: "/settings" },
+  { title: "User Management", icon: Shield, url: "/users", adminOnly: true },
 ];
 
 export function AppSidebar() {
   const [location, navigate] = useLocation();
   const { user } = useAuth();
+  const { permissions } = usePermissions();
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
       window.location.reload();
@@ -57,7 +60,25 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {menuItems.filter((item) => {
+                // Filter menu items based on permissions
+                if (item.url === '/enrollment' || item.url === '/batch-enrollment') {
+                  return permissions.canEnroll;
+                }
+                if (item.url === '/verification') {
+                  return permissions.canVerify;
+                }
+                if (item.url === '/similarity-search') {
+                  return permissions.canUseSimilaritySearch;
+                }
+                if (item.url === '/settings') {
+                  return permissions.canViewSettings;
+                }
+                if ((item as any).adminOnly) {
+                  return permissions.canViewUsers;
+                }
+                return true; // Dashboard, Enrollees, Events are visible to all
+              }).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     onClick={() => navigate(item.url)}
@@ -77,6 +98,12 @@ export function AppSidebar() {
           <div className="text-sm">
             <p className="font-medium">{user?.name || 'User'}</p>
             <p className="text-xs text-muted-foreground">{user?.email || ''}</p>
+            {user?.role && (
+              <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                <Shield className="h-3 w-3" />
+                <span className="capitalize">{user.role}</span>
+              </div>
+            )}
           </div>
           <SidebarMenuButton
             onClick={() => logoutMutation.mutate()}

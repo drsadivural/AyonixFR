@@ -12,6 +12,7 @@ import Verification from "@/pages/Verification";
 import Events from "@/pages/Events";
 import Settings from "@/pages/Settings";
 import Register from "@/pages/Register";
+import UserManagement from "@/pages/UserManagement";
 import ChatAssistant from "@/components/ChatAssistant";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -69,6 +70,7 @@ function AuthenticatedApp() {
             <Route path="/verification" component={Verification} />
             <Route path="/events" component={Events} />
             <Route path="/settings" component={Settings} />
+            <Route path="/users" component={UserManagement} />
             <Route path="/404" component={NotFound} />
             <Route component={NotFound} />
           </Switch>

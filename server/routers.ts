@@ -11,6 +11,7 @@ import { findBestMatch, verifyFaces, validateEmbedding } from './faceRecognition
 import { extractSingleFaceEmbedding, extractMultipleFaceEmbeddings, get3DLandmarks } from './pythonFaceService';
 import { assessFaceQuality } from './faceQuality';
 import { TRPCError } from "@trpc/server";
+import { hasPermission, requireAdmin, requireOperatorOrAdmin, type UserRole } from './permissions';
 
 export const appRouter = router({
   system: systemRouter,
@@ -86,6 +87,14 @@ export const appRouter = router({
         enrollmentMethod: z.enum(['camera', 'photo', 'mobile']),
       }))
       .mutation(async ({ input, ctx }) => {
+        // Check permission
+        if (!hasPermission(ctx.user.role as UserRole, 'canEnroll')) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You do not have permission to enroll faces',
+          });
+        }
+        
         // Extract face embedding using Python service with MediaPipe
         let faceEmbedding: number[];
         try {
@@ -145,7 +154,15 @@ export const appRouter = router({
         address: z.string().optional(),
         instagram: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Check permission
+        if (!hasPermission(ctx.user.role as UserRole, 'canEditEnrollee')) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You do not have permission to edit enrollees',
+          });
+        }
+        
         const { id, ...updateData } = input;
         await db.updateEnrollee(id, updateData);
         return { success: true };
@@ -153,7 +170,15 @@ export const appRouter = router({
 
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Check permission
+        if (!hasPermission(ctx.user.role as UserRole, 'canDeleteEnrollee')) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You do not have permission to delete enrollees',
+          });
+        }
+        
         await db.deleteEnrollee(input.id);
         return { success: true };
       }),
@@ -167,7 +192,15 @@ export const appRouter = router({
         cameraSource: z.string(),
         threshold: z.number().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Check permission
+        if (!hasPermission(ctx.user.role as UserRole, 'canVerify')) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You do not have permission to verify faces',
+          });
+        }
+        
         // Extract face embeddings using Python service with MediaPipe
         let faceEmbeddings: number[][];
         try {
@@ -329,6 +362,14 @@ export const appRouter = router({
         databaseStorageLocation: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Check permission
+        if (!hasPermission(ctx.user.role as UserRole, 'canEditSettings')) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You do not have permission to edit settings',
+          });
+        }
+        
         await db.upsertSettings(ctx.user.id, input);
         return { success: true };
       }),
@@ -432,6 +473,38 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const similarFaces = await db.findSimilarFaces(input.faceEmbedding, input.threshold);
         return similarFaces;
+      }),
+  }),
+
+  // ============= USER MANAGEMENT =============
+  users: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      // Only admins can list users
+      if (!hasPermission(ctx.user.role as UserRole, 'canViewUsers')) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to view users',
+        });
+      }
+      return await db.getAllUsers();
+    }),
+
+    updateRole: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        role: z.enum(['admin', 'operator', 'viewer']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Only admins can change user roles
+        if (!hasPermission(ctx.user.role as UserRole, 'canChangeUserRoles')) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You do not have permission to change user roles',
+          });
+        }
+        
+        await db.updateUserRole(input.userId, input.role);
+        return { success: true };
       }),
   }),
 });

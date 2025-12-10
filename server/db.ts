@@ -194,6 +194,18 @@ function cosineSimilarity(a: number[], b: number[]): number {
   const denominator = Math.sqrt(normA) * Math.sqrt(normB);
   return denominator === 0 ? 0 : dotProduct / denominator;
 }
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(users).orderBy(desc(users.createdAt));
+}
+
+export async function updateUserRole(userId: number, role: 'admin' | 'operator' | 'viewer') {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(users).set({ role: role as any }).where(eq(users.id, userId));
+}
+
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {

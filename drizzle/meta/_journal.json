@@ -43,6 +43,13 @@
       "when": 1765359150475,
       "tag": "0005_stale_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1765367565282,
+      "tag": "0006_bizarre_owl",
+      "breakpoints": true
     }
   ]
 }
