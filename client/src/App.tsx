@@ -1,38 +1,79 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import NotFound from "@/pages/NotFound";
+import Dashboard from "@/pages/Dashboard";
+import Enrollment from "@/pages/Enrollment";
+import Enrollees from "@/pages/Enrollees";
+import Verification from "@/pages/Verification";
+import Events from "@/pages/Events";
+import Settings from "@/pages/Settings";
+import ChatAssistant from "@/components/ChatAssistant";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+import { useAuth } from "./_core/hooks/useAuth";
+import { getLoginUrl } from "./const";
+import { Button } from "./components/ui/button";
+import { Loader2 } from "lucide-react";
 
-function Router() {
-  // make sure to consider if you need authentication for certain routes
+function AuthenticatedApp() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen space-y-4">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-2">Ayonix Face Recognition</h1>
+          <p className="text-muted-foreground mb-6">
+            Professional biometric face recognition system
+          </p>
+        </div>
+        <Button onClick={() => window.location.href = getLoginUrl()}>
+          Sign In to Continue
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <AppSidebar />
+        <main className="flex-1 p-6 lg:p-8">
+          <Switch>
+            <Route path="/" component={Dashboard} />
+            <Route path="/enrollment" component={Enrollment} />
+            <Route path="/enrollees" component={Enrollees} />
+            <Route path="/verification" component={Verification} />
+            <Route path="/events" component={Events} />
+            <Route path="/settings" component={Settings} />
+            <Route path="/404" component={NotFound} />
+            <Route component={NotFound} />
+          </Switch>
+        </main>
+        <ChatAssistant />
+      </div>
+    </SidebarProvider>
   );
 }
-
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <AuthenticatedApp />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

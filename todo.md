@@ -1,0 +1,71 @@
+# Ayonix Face Recognition System - TODO
+
+## Database Schema
+- [x] Design enrollees table with face embeddings and personal info
+- [x] Design recognition_logs table for verification history
+- [x] Design settings table for LLM/voice/recognition configuration
+- [x] Design events table for system activity logging
+
+## Backend API
+- [x] Face detection endpoint with bounding box coordinates
+- [x] Face enrollment endpoint with embedding extraction
+- [x] Face verification endpoint with real-time matching
+- [x] Enrollee CRUD operations (list, get, update, delete)
+- [x] Recognition logs retrieval with filtering
+- [x] Events logging system
+- [x] Settings management (LLM, voice, recognition thresholds)
+- [x] S3 integration for face image storage
+- [x] LLM chat endpoint with bilingual support
+- [x] Voice transcription endpoint (Japanese/English)
+
+## Frontend UI
+- [x] Elegant design system with Ayonix Blue theme
+- [x] Navigation layout with sidebar (Dashboard, Enrollment, Enrollees, Verification, Events, Settings)
+- [x] Dashboard with KPIs, charts, and recent activity
+- [x] Enrollment module with webcam capture and face tracking
+- [x] Enrollee list with grid/card view and detailed profiles
+- [x] Verification module with real-time face detection and matching
+- [x] Events page with filtering and timeline view
+- [x] Settings page with three tabs (LLM, Voice, Face Recognition)
+- [x] Voice assistant UI with microphone button
+- [x] LLM chat interface for system interaction
+
+## LLM Integration
+- [x] Bilingual chat support (Japanese/English)
+- [x] System prompt configuration in settings
+- [x] Voice command processing ("enroll new person", "start verification", etc.)
+- [x] Conversational responses for match results
+- [x] Context-aware assistance for system usage
+
+## Voice Assistant
+- [x] Speech-to-text integration (Japanese/English)
+- [x] Text-to-speech for responses
+- [x] Push-to-talk and auto-listen modes
+- [x] Language selection in settings
+- [x] Voice command routing to appropriate modules
+
+## Face Recognition Features
+- [x] Real-time face detection with 3D landmarks
+- [x] Face embedding extraction and storage
+- [x] 1:N face matching against database
+- [x] Confidence scoring with configurable threshold
+- [x] Multi-face detection support
+- [x] Face tracking with bounding boxes
+
+## Additional Features
+- [x] Export recognition logs to CSV/JSON
+- [x] Analytics and insights on recognition data
+- [x] Automatic image cleanup policies
+- [x] Camera source selection (webcam, mobile, upload)
+- [x] Mobile phone camera integration
+- [x] Recognition history per enrollee
+- [x] Event notifications for matches/enrollments
+
+## Testing & Deployment
+- [x] Test face enrollment flow
+- [x] Test face verification with multiple faces
+- [x] Test bilingual voice commands
+- [x] Test LLM chat interactions
+- [ ] Create checkpoint
+- [ ] Create GitHub repository
+- [ ] Push complete code to GitHub

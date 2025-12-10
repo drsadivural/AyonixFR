@@ -43,10 +43,11 @@
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
+  /* Ayonix Blue Theme */
+  --primary: oklch(0.623 0.214 259.815); /* Ayonix Blue */
+  --primary-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --sidebar-primary-foreground: oklch(1 0 0);
   --chart-1: var(--color-blue-300);
   --chart-2: var(--color-blue-500);
   --chart-3: var(--color-blue-600);
@@ -79,10 +80,11 @@
 }
 
 .dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
+  /* Ayonix Blue Theme - Dark */
+  --primary: oklch(0.623 0.214 259.815);
+  --primary-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --sidebar-primary-foreground: oklch(1 0 0);
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.85 0.005 65);
   --card: oklch(0.21 0.006 285.885);
@@ -158,6 +160,54 @@
   .flex {
     min-height: 0;
     min-width: 0;
+  }
+
+  /* Face detection overlay styles */
+  .face-box {
+    position: absolute;
+    border: 3px solid oklch(0.623 0.214 259.815);
+    border-radius: 8px;
+    box-shadow: 0 0 20px oklch(0.623 0.214 259.815 / 0.5);
+    pointer-events: none;
+    transition: all 0.2s ease-out;
+  }
+
+  .face-landmark {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: oklch(0.623 0.214 259.815);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  /* Video container for face recognition */
+  .video-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--muted);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  .video-container video {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* Card hover effects */
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   }
 
   @media (min-width: 640px) {
