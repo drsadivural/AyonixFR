@@ -17,6 +17,7 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import UserManagement from "@/pages/UserManagement";
 import VoiceSettings from "@/pages/VoiceSettings";
+import APIKeysSettings from "@/pages/APIKeysSettings";
 import ChatAssistant from "@/components/ChatAssistant";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -72,7 +73,8 @@ function AuthenticatedApp() {
             <Route path="/events" component={Events} />
             <Route path="/settings" component={Settings} />
               <Route path="/voice-settings" component={VoiceSettings} />
-              <Route path="/user-management" component={UserManagement} />
+            <Route path="/api-keys" component={APIKeysSettings} />
+            <Route path="/user-management" component={UserManagement} />
             <Route path="/404" component={NotFound} />
             <Route component={NotFound} />
           </Switch>

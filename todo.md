@@ -289,3 +289,34 @@
 - [x] Test Azure TTS with API key (requires user to add API key in settings)
 - [x] Test provider switching in settings (UI complete, functional with API keys)
 - [x] Create checkpoint after implementation
+
+
+## Facial Expression & Emotion Detection
+- [x] Install face-api.js or similar library for facial landmark detection
+- [x] Implement real-time emotion detection (happy, sad, angry, neutral, surprised, fearful, disgusted)
+- [x] Create emotion detection service module
+- [ ] Integrate emotion detection into enrollment page
+- [ ] Integrate emotion detection into verification page
+- [ ] Display detected emotion in UI with confidence scores
+- [ ] Store detected emotion in recognition logs
+
+## Voice Recognition & Sentiment Analysis
+- [x] Implement voice recognition using Web Speech API
+- [x] Add voice command processing (start enrollment, start verification, search person)
+- [x] Integrate sentiment analysis for voice input
+- [x] Detect voice tone and emotional state from audio (keyword-based)
+- [ ] Display voice sentiment in UI
+- [ ] Store voice sentiment in interaction logs
+
+## API Key Management UI
+- [x] Add ElevenLabs API key field to settings
+- [x] Add Google Cloud TTS API key field to settings
+- [x] Add Google Cloud base URL field to settings
+- [x] Add Azure Speech API key field to settings
+- [x] Add Azure Speech region/base URL field to settings
+- [x] Create secure API key input components (masked display)
+- [x] Add API key validation and testing functionality (UI ready)
+- [x] Create API Keys Settings page with instructions
+- [x] Add "Test Connection" buttons for each provider
+- [x] Add API Keys to sidebar navigation
+- [x] Create checkpoint after implementation

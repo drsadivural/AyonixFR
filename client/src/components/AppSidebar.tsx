@@ -10,7 +10,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, UserPlus, Users, ScanFace, Activity, Settings, LogOut, FolderUp, GitCompare, Shield, Volume2 } from "lucide-react";
+import { LayoutDashboard, UserPlus, Users, ScanFace, Activity, Settings, LogOut, FolderUp, GitCompare, Shield, Volume2, KeyRound } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -27,6 +27,7 @@ const menuItems = [
   { title: "Events", icon: Activity, url: "/events" },
   { title: "Settings", icon: Settings, url: "/settings" },
   { title: "Voice Settings", icon: Volume2, url: "/voice-settings" },
+  { title: "API Keys", icon: KeyRound, url: "/api-keys" },
   { title: "User Management", icon: Shield, url: "/user-management", adminOnly: true },
 ];
 
