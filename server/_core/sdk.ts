@@ -264,7 +264,7 @@ class SDKServer {
       throw ForbiddenError("No session cookie");
     }
 
-    // Try JWT-based auth first (for email/password users)
+    // Use JWT-based authentication only
     try {
       const jwt = await import('jsonwebtoken');
       const decoded = jwt.default.verify(sessionCookie, ENV.cookieSecret) as { userId: number };
@@ -272,52 +272,16 @@ class SDKServer {
       if (decoded.userId) {
         const user = await db.getUserById(decoded.userId);
         if (user) {
+          // Update last signed in
+          await db.updateUserLastSignedIn(user.id);
           return user;
         }
       }
     } catch (jwtError) {
-      // JWT verification failed, try OAuth session
+      console.warn("[Auth] JWT verification failed:", jwtError);
     }
 
-    // Fallback to OAuth session verification
-    const session = await this.verifySession(sessionCookie);
-
-    if (!session) {
-      throw ForbiddenError("Invalid session cookie");
-    }
-
-    const sessionUserId = session.openId;
-    const signedInAt = new Date();
-    let user = await db.getUserByOpenId(sessionUserId);
-
-    // If user not in DB, sync from OAuth server automatically
-    if (!user) {
-      try {
-        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-        await db.upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt,
-        });
-        user = await db.getUserByOpenId(userInfo.openId);
-      } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
-        throw ForbiddenError("Failed to sync user info");
-      }
-    }
-
-    if (!user) {
-      throw ForbiddenError("User not found");
-    }
-
-    await db.upsertUser({
-      openId: user.openId!,
-      lastSignedIn: signedInAt,
-    });
-
-    return user;
+    throw ForbiddenError("Invalid session cookie");
   }
 }
 

@@ -582,3 +582,28 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [ ] Test backend photo processing
 - [ ] Test voice interruption
 - [ ] Create final checkpoint
+
+
+## Remove Manus OAuth Dependencies
+- [x] Remove Manus OAuth redirect from App.tsx (already using Register/Login)
+- [x] Update authentication flow to check for registered users first
+- [x] Show registration page if no users exist in database
+- [x] Show login page if users exist
+- [x] Remove getLoginUrl() usage (not used)
+- [x] Update authenticateRequest to use JWT-only (removed OAuth fallback)
+
+## Google OAuth Integration
+- [ ] Set up Google OAuth credentials (requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars)
+- [x] Add Google OAuth provider to backend (Passport.js with Google Strategy)
+- [x] Create Google OAuth callback endpoint (/api/auth/google/callback)
+- [x] Add "Sign in with Google" button to login page
+- [x] Add "Sign up with Google" button to registration page
+- [x] Handle Google OAuth user creation (creates user if not exists)
+- [ ] Test Google OAuth flow (requires Google OAuth credentials)
+
+## Final Testing
+- [ ] Test registration flow without Manus
+- [ ] Test login flow without Manus
+- [ ] Test Google OAuth registration
+- [ ] Test Google OAuth login
+- [ ] Create checkpoint after implementation
