@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Mic, MicOff, Volume2, HelpCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
+import VoiceCommandTutorial from './VoiceCommandTutorial';
 import { 
   parseVoiceCommand, 
   VoiceResponseGenerator, 
@@ -26,6 +27,7 @@ export function GlobalVoiceAssistant({ onCommand }: GlobalVoiceAssistantProps) {
   const [lastTranscript, setLastTranscript] = useState('');
   const [showCommands, setShowCommands] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const recognitionRef = useRef<any>(null);
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [location, navigate] = useLocation();
@@ -151,7 +153,7 @@ export function GlobalVoiceAssistant({ onCommand }: GlobalVoiceAssistantProps) {
     if (action === 'help') {
       const response = VoiceResponseGenerator.getResponse(action);
       speak(response);
-      setShowCommands(true);
+      setShowTutorial(true);
       return;
     }
 
@@ -373,6 +375,12 @@ export function GlobalVoiceAssistant({ onCommand }: GlobalVoiceAssistantProps) {
           </Card>
         </div>
       )}
+      
+      {/* Voice Command Tutorial */}
+      <VoiceCommandTutorial 
+        open={showTutorial} 
+        onClose={() => setShowTutorial(false)} 
+      />
     </>
   );
 }

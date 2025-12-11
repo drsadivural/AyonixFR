@@ -346,7 +346,7 @@ export default function Enrollment() {
     }
   };
 
-  const handleEnroll = () => {
+  const handleEnroll = async () => {
     if (!capturedImage) {
       toast.error('Please capture or upload an image first');
       return;
@@ -363,14 +363,37 @@ export default function Enrollment() {
       return;
     }
 
+    // Convert voice blob to base64 if present
+    let voiceBase64: string | undefined;
+    if (formData.voiceBlob) {
+      try {
+        voiceBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(formData.voiceBlob!);
+        });
+      } catch (error) {
+        console.error('Failed to convert voice blob:', error);
+        toast.error('Failed to process voice sample');
+        return;
+      }
+    }
+
     // First check for duplicates by extracting embedding
     // For now, we'll skip duplicate check and proceed directly
     // In production, you would extract embedding first, check duplicates, then enroll
     
     enrollMutation.mutate({
-      ...formData,
+      name: formData.name,
+      surname: formData.surname,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      instagram: formData.instagram,
       imageBase64: capturedImage,
       enrollmentMethod,
+      voiceBase64,
     });
   };
 

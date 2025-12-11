@@ -684,3 +684,19 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [ ] Add voice command help ("what can I say?") - can be added to voice assistant
 - [ ] Enhance voice command accuracy with better NLP
 - [ ] Add voice confirmation for critical actions
+
+## Voice Sample Backend Integration
+- [x] Create voice upload endpoint in backend
+- [x] Integrate S3 storage for voice samples
+- [x] Add speech-to-text transcription using Whisper API
+- [x] Update enrollment mutation to accept voice data
+- [x] Store voice sample URL and transcript in database
+- [ ] Test voice upload flow end-to-end
+
+## Voice Command Tutorial
+- [x] Create VoiceCommandTutorial component
+- [x] List all available voice commands with examples
+- [x] Add interactive practice mode
+- [x] Show tutorial on first app launch (via VoiceOnboardingTutorial)
+- [x] Add "Help" button to access tutorial anytime (via voice command "help")
+- [x] Include voice command categories (Navigation, Enrollment, Verification)

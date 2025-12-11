@@ -262,6 +262,7 @@ export const appRouter = router({
         instagram: z.string().optional(),
         imageBase64: z.string(),
         enrollmentMethod: z.enum(['camera', 'photo', 'mobile']),
+        voiceBase64: z.string().optional(), // Base64-encoded audio file
       }))
       .mutation(async ({ input, ctx }) => {
         // Check permission
@@ -291,6 +292,48 @@ export const appRouter = router({
         const imageKey = `enrollees/${ctx.user.id}-${Date.now()}-${randomSuffix}.jpg`;
         const { url: imageUrl } = await storagePut(imageKey, imageBuffer, 'image/jpeg');
 
+        // Process voice sample if provided
+        let voiceSampleUrl: string | null = null;
+        let voiceSampleKey: string | null = null;
+        let voiceTranscript: string | null = null;
+        
+        if (input.voiceBase64) {
+          try {
+            // Decode base64 audio
+            const voiceBase64Data = input.voiceBase64.split(',')[1] || input.voiceBase64;
+            const voiceBuffer = Buffer.from(voiceBase64Data, 'base64');
+            
+            // Upload to S3
+            const voiceKey = `enrollees/voice/${ctx.user.id}-${Date.now()}-${randomSuffix}.webm`;
+            const { url: voiceUrl } = await storagePut(voiceKey, voiceBuffer, 'audio/webm');
+            
+            voiceSampleUrl = voiceUrl;
+            voiceSampleKey = voiceKey;
+            
+            // Transcribe audio using Whisper
+            try {
+              const transcription = await transcribeAudio({
+                audioUrl: voiceUrl,
+                language: 'en',
+              });
+              
+              // Check if transcription was successful
+              if ('error' in transcription) {
+                console.error('Failed to transcribe audio:', transcription.error);
+                // Continue without transcript - it's optional
+              } else {
+                voiceTranscript = transcription.text;
+              }
+            } catch (transcribeError) {
+              console.error('Failed to transcribe audio:', transcribeError);
+              // Continue without transcript - it's optional
+            }
+          } catch (voiceError) {
+            console.error('Failed to process voice sample:', voiceError);
+            // Continue without voice - it's optional
+          }
+        }
+
         // Create enrollee
         const enrollee = await db.createEnrollee({
           name: input.name,
@@ -305,6 +348,9 @@ export const appRouter = router({
           faceEmbedding: JSON.stringify(faceEmbedding),
           enrollmentMethod: input.enrollmentMethod,
           enrolledBy: ctx.user.id,
+          voiceSampleUrl,
+          voiceSampleKey,
+          voiceTranscript,
         });
 
         // Log event
