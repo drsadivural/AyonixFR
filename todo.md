@@ -707,7 +707,7 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Add audio player controls (play/pause/stop)
 - [x] Handle cases where enrollee has no voice sample
 - [x] Add visual feedback during voice playback
-- [ ] Test voice playback with multiple matches
+- [x] Test voice playback with multiple matches
 
 ## Voice-Based Enrollee Search
 - [x] Add "Find [name]" voice command to search enrollees
@@ -716,4 +716,13 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Navigate to enrollee profile if single match found
 - [x] Show search results UI if multiple matches
 - [x] Handle no results case with voice feedback
-- [ ] Test voice search with various names
+- [x] Test voice search with various names
+
+## Landmark Visualization Bug Fix
+- [x] Debug why face rectangle is not showing in enrollment camera stream (removed mixBlendMode)
+- [x] Debug why 3D landmarks are not rendering in enrollment (fixed canvas styling)
+- [x] Debug why face rectangle is not showing in verification camera stream (removed mixBlendMode)
+- [x] Debug why 3D landmarks are not rendering in verification (fixed canvas styling)
+- [x] Fix canvas rendering logic for landmarks (added bounding box calculation)
+- [x] Ensure bounding box draws correctly around detected face (green 3px stroke)
+- [ ] Test landmark visualization with live camera feed

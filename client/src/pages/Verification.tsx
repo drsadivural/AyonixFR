@@ -219,6 +219,21 @@ export default function Verification() {
 
     // Draw landmarks if available
     if (landmarks && landmarks.length > 0) {
+      // Calculate bounding box
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      landmarks.forEach(landmark => {
+        minX = Math.min(minX, landmark.x);
+        minY = Math.min(minY, landmark.y);
+        maxX = Math.max(maxX, landmark.x);
+        maxY = Math.max(maxY, landmark.y);
+      });
+      
+      // Draw bounding box
+      ctx.strokeStyle = '#10b981'; // Green
+      ctx.lineWidth = 3;
+      ctx.strokeRect(minX - 10, minY - 10, maxX - minX + 20, maxY - minY + 20);
+      
+      // Draw landmarks
       ctx.fillStyle = '#3b82f6';
       ctx.strokeStyle = '#3b82f6';
       ctx.lineWidth = 1;
@@ -444,7 +459,6 @@ export default function Verification() {
               <canvas
                 ref={overlayCanvasRef}
                 className={`absolute top-0 left-0 w-full h-full pointer-events-none ${!isVerifying ? 'hidden' : ''}`}
-                style={{ mixBlendMode: 'screen' }}
               />
               
               {/* Confidence Indicator */}
