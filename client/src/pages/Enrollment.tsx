@@ -525,7 +525,7 @@ export default function Enrollment() {
                   )}
                   
                   {capturedImage && (
-                    <img src={capturedImage} alt="Captured" className="w-full h-full object-cover" />
+                    <img src={capturedImage} alt="Captured" className="w-full h-full object-contain" />
                   )}
                   
                   <canvas ref={canvasRef} className="hidden" />
@@ -568,7 +568,7 @@ export default function Enrollment() {
                       </Label>
                     </div>
                   ) : (
-                    <img src={capturedImage} alt="Uploaded" className="w-full h-full object-cover" />
+                    <img src={capturedImage} alt="Uploaded" className="w-full h-full object-contain" />
                   )}
                 </div>
 

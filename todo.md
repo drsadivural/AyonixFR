@@ -785,3 +785,10 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [ ] Debug why landmarks aren't rendering on canvas
 - [ ] Test camera enrollment with face detection
 - [ ] Test photo upload enrollment
+
+## Photo Upload Image Cropping Issue
+- [x] Test face detection with user's actual photo (478 landmarks, 75.2% confidence)
+- [x] Fix image preview aspect ratio (changed object-cover to object-contain)
+- [x] Ensure entire face is visible in preview
+- [x] Maintain proper aspect ratio for uploaded photos
+- [ ] Test photo enrollment with fixed display
