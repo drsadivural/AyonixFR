@@ -770,3 +770,9 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Fix default role in registration from 'viewer' to 'user'
 - [x] Update all registration code to use new role system
 - [ ] Test registration with new role
+
+## Permission Check Error After Registration
+- [x] Fix "Cannot read properties of undefined (reading 'canEnroll')" error
+- [x] Add null check for user object in permission checks (updated usePermissions)
+- [x] Ensure user data is properly loaded after registration
+- [ ] Test registration → login → dashboard flow

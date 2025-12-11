@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 
-export type UserRole = 'admin' | 'operator' | 'viewer';
+export type UserRole = 'admin' | 'user';
 
 export interface Permission {
   // Enrollment permissions
@@ -42,6 +42,7 @@ export interface Permission {
 function getPermissions(role: UserRole): Permission {
   switch (role) {
     case 'admin':
+      // Admin has full access to everything
       return {
         canEnroll: true,
         canBatchEnroll: true,
@@ -61,31 +62,12 @@ function getPermissions(role: UserRole): Permission {
         canUseSimilaritySearch: true,
       };
     
-    case 'operator':
-      return {
-        canEnroll: true,
-        canBatchEnroll: true,
-        canVerify: true,
-        canViewEnrollees: true,
-        canEditEnrollee: true,
-        canDeleteEnrollee: false,
-        canViewSettings: true,
-        canEditSettings: false,
-        canViewUsers: false,
-        canManageUsers: false,
-        canChangeUserRoles: false,
-        canViewEvents: true,
-        canExportEvents: true,
-        canViewDashboard: true,
-        canViewAnalytics: true,
-        canUseSimilaritySearch: true,
-      };
-    
-    case 'viewer':
+    case 'user':
+      // Regular users can only verify and view events
       return {
         canEnroll: false,
         canBatchEnroll: false,
-        canVerify: false,
+        canVerify: true,
         canViewEnrollees: true,
         canEditEnrollee: false,
         canDeleteEnrollee: false,
@@ -100,6 +82,10 @@ function getPermissions(role: UserRole): Permission {
         canViewAnalytics: true,
         canUseSimilaritySearch: false,
       };
+    
+    default:
+      // Fallback to user permissions for unknown roles
+      return getPermissions('user');
   }
 }
 
@@ -110,18 +96,17 @@ export function usePermissions() {
   const { user } = useAuth();
   
   if (!user) {
-    // Return no permissions for unauthenticated users
+    // Return limited permissions for unauthenticated users
     return {
-      permissions: getPermissions('viewer'),
-      role: 'viewer' as UserRole,
+      permissions: getPermissions('user'),
+      role: 'user' as UserRole,
       hasPermission: () => false,
       isAdmin: false,
-      isOperator: false,
-      isViewer: true,
+      isUser: true,
     };
   }
   
-  const role = (user.role || 'viewer') as UserRole;
+  const role = (user.role || 'user') as UserRole;
   const permissions = getPermissions(role);
   
   return {
@@ -129,7 +114,6 @@ export function usePermissions() {
     role,
     hasPermission: (permission: keyof Permission) => permissions[permission],
     isAdmin: role === 'admin',
-    isOperator: role === 'operator',
-    isViewer: role === 'viewer',
+    isUser: role === 'user',
   };
 }
