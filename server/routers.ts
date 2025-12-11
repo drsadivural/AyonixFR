@@ -606,7 +606,7 @@ export const appRouter = router({
       .input(z.object({
         imageBase64: z.string(),
       }))
-      .query(async ({ input }) => {
+      .mutation(async ({ input }) => {
         try {
           const landmarks = await get3DLandmarks(input.imageBase64);
           return { landmarks };

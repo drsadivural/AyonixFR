@@ -75,18 +75,7 @@ export default function Enrollment() {
     },
   });
 
-  const [landmarksImageData, setLandmarksImageData] = useState<string | null>(null);
-  
-  const { data: landmarksData } = trpc.verification.getLandmarks.useQuery(
-    { imageBase64: landmarksImageData || '' },
-    { enabled: !!landmarksImageData }
-  );
-  
-  useEffect(() => {
-    if (landmarksData && Array.isArray(landmarksData) && landmarksData.length > 0 && landmarksData[0]) {
-      setLandmarks((landmarksData as any)[0].landmarks);
-    }
-  }, [landmarksData]);
+  const getLandmarksMutation = trpc.verification.getLandmarks.useMutation();
 
   // Enumerate camera devices on component mount
   useEffect(() => {
@@ -161,31 +150,28 @@ export default function Enrollment() {
     ctx.drawImage(video, 0, 0);
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
     
+    console.log('[Enrollment] Video dimensions:', video.videoWidth, 'x', video.videoHeight);
+    
     try {
-      // Fetch landmarks from backend
-      const response = await fetch('/api/trpc/verification.getLandmarks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          json: { imageBase64: imageData }
-        })
-      });
+      // Fetch landmarks from backend using tRPC mutation
+      const result = await getLandmarksMutation.mutateAsync({ imageBase64: imageData });
       
-      if (response.ok) {
-        const data = await response.json();
-        if (data?.result?.data?.landmarks) {
-          const landmarksArray = data.result.data.landmarks;
-          if (Array.isArray(landmarksArray) && landmarksArray.length > 0 && landmarksArray[0]) {
-            setLandmarks(landmarksArray[0].landmarks || landmarksArray[0]);
-            // Extract confidence score
-            if (landmarksArray[0].confidence !== undefined) {
-              setConfidence(landmarksArray[0].confidence);
-            }
-          }
-        }
+      console.log('[Enrollment] Landmark result:', result);
+      
+      if (result.landmarks && result.landmarks.length > 0) {
+        const firstFace = result.landmarks[0];
+        console.log('[Enrollment] Setting', firstFace.landmarks.length, 'landmarks, first:', firstFace.landmarks[0]);
+        setLandmarks(firstFace.landmarks);
+        setConfidence(Math.round((firstFace.confidence || 0) * 100));
+      } else {
+        console.log('[Enrollment] No faces detected');
+        setLandmarks(null);
+        setConfidence(0);
       }
     } catch (error) {
       console.error('Failed to fetch landmarks:', error);
+      setLandmarks(null);
+      setConfidence(0);
     }
   };
 
@@ -212,6 +198,9 @@ export default function Enrollment() {
 
     // Draw landmarks if available
     if (landmarks && landmarks.length > 0) {
+      console.log('[Enrollment] Drawing', landmarks.length, 'landmarks on canvas', overlayCanvas.width, 'x', overlayCanvas.height);
+      console.log('[Enrollment] First landmark:', landmarks[0]);
+      
       // Calculate bounding box
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       landmarks.forEach(landmark => {
@@ -220,6 +209,8 @@ export default function Enrollment() {
         maxX = Math.max(maxX, landmark.x);
         maxY = Math.max(maxY, landmark.y);
       });
+      
+      console.log('[Enrollment] Bounding box:', {minX, minY, maxX, maxY});
       
       // Draw bounding box
       ctx.strokeStyle = '#10b981'; // Green
@@ -317,9 +308,6 @@ export default function Enrollment() {
         const imageData = canvas.toDataURL('image/jpeg');
         setCapturedImage(imageData);
         
-        // Get landmarks for the captured image
-        setLandmarksImageData(imageData);
-        
         stopCamera();
       }
     }
@@ -354,8 +342,6 @@ export default function Enrollment() {
         }
         
         setCapturedImage(imageData);
-        // Get landmarks for the uploaded image
-        setLandmarksImageData(imageData);
       };
       reader.readAsDataURL(file);
     }

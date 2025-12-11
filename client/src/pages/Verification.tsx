@@ -86,20 +86,7 @@ export default function Verification() {
     },
   });
 
-  const { data: landmarksData } = trpc.verification.getLandmarks.useQuery(
-    { imageBase64: landmarksImageData || '' },
-    { enabled: !!landmarksImageData }
-  );
-
-  useEffect(() => {
-    if (landmarksData && Array.isArray(landmarksData) && landmarksData.length > 0) {
-      // Get landmarks for all detected faces
-      const allLandmarks = landmarksData.flatMap((face: any) => face.landmarks);
-      if (allLandmarks.length > 0) {
-        setLandmarks(allLandmarks);
-      }
-    }
-  }, [landmarksData]);
+  const getLandmarksMutation = trpc.verification.getLandmarks.useMutation();
 
   const fetchLandmarksFromVideo = async () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -107,6 +94,8 @@ export default function Verification() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+    
+    console.log('[Verification] Fetching landmarks, video dimensions:', video.videoWidth, 'x', video.videoHeight);
     
     if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) return;
     
@@ -117,34 +106,26 @@ export default function Verification() {
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
     
     try {
-      // Fetch landmarks from backend
-      const response = await fetch('/api/trpc/verification.getLandmarks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          json: { imageBase64: imageData }
-        })
-      });
+      // Fetch landmarks from backend using tRPC mutation
+      const result = await getLandmarksMutation.mutateAsync({ imageBase64: imageData });
       
-      if (response.ok) {
-        const data = await response.json();
-        if (data?.result?.data?.landmarks) {
-          const landmarksArray = data.result.data.landmarks;
-          if (Array.isArray(landmarksArray) && landmarksArray.length > 0) {
-            // Flatten all face landmarks for multi-face detection
-            const allLandmarks = landmarksArray.flatMap((face: any) => face.landmarks || face);
-            if (allLandmarks.length > 0) {
-              setLandmarks(allLandmarks);
-            }
-            // Extract confidence from first face
-            if (landmarksArray[0]?.confidence !== undefined) {
-              setConfidence(landmarksArray[0].confidence);
-            }
-          }
-        }
+      console.log('[Verification] Landmark result:', result);
+      
+      if (result.landmarks && result.landmarks.length > 0) {
+        // For verification, show landmarks from first detected face
+        const firstFace = result.landmarks[0];
+        console.log('[Verification] Setting', firstFace.landmarks.length, 'landmarks');
+        setLandmarks(firstFace.landmarks);
+        setConfidence(Math.round((firstFace.confidence || 0) * 100));
+      } else {
+        console.log('[Verification] No faces detected');
+        setLandmarks(null);
+        setConfidence(0);
       }
     } catch (error) {
       console.error('Failed to fetch landmarks:', error);
+      setLandmarks(null);
+      setConfidence(0);
     }
   };
 

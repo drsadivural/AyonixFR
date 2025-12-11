@@ -725,4 +725,13 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Debug why 3D landmarks are not rendering in verification (fixed canvas styling)
 - [x] Fix canvas rendering logic for landmarks (added bounding box calculation)
 - [x] Ensure bounding box draws correctly around detected face (green 3px stroke)
-- [ ] Test landmark visualization with live camera feed
+- [x] Test landmark visualization with live camera feed
+
+## Landmark Visualization Still Not Working
+- [x] Check if landmarks state is being populated from backend
+- [x] Verify Python face service is returning landmark data
+- [x] Check coordinate system (normalized vs pixel coordinates)
+- [x] Add console logging to debug landmark data flow
+- [x] Verify canvas dimensions match video dimensions
+- [x] Test if landmarks array has valid data
+- [x] Fix coordinate transformation if needed (changed .query to .mutation)
