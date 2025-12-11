@@ -26,12 +26,13 @@ export function GlobalVoiceAssistant({ onCommand }: GlobalVoiceAssistantProps) {
   const [lastTranscript, setLastTranscript] = useState('');
   const [showCommands, setShowCommands] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [location, navigate] = useLocation();
   const { user } = useAuth();
   
-  const { data: enrolleeCount } = trpc.enrollees.count.useQuery();
+  const { data: enrollees } = trpc.enrollees.list.useQuery();
+  const enrolleeCount = enrollees?.length ?? 0;
 
   useEffect(() => {
     // Set up speaking state callback

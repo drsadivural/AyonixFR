@@ -131,7 +131,7 @@ export default function Enrollees() {
                   try {
                     await exportEnrolleesWithPhotos(enrollees.map(e => ({
                       ...e,
-                      enrolledAt: new Date(e.enrolledAt),
+                      enrolledAt: new Date(e.createdAt),
                     })));
                     toast.success('Export completed successfully!');
                   } catch (error) {

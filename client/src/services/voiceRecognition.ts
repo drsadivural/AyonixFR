@@ -27,7 +27,7 @@ export type VoiceCommand =
 export function createVoiceRecognition(
   onResult: (result: VoiceRecognitionResult) => void,
   onCommand?: (command: VoiceCommand, params?: string) => void
-): SpeechRecognition | null {
+): any {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     console.warn('[VoiceRecognition] Speech recognition not supported');
     return null;

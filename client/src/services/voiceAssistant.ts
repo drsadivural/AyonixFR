@@ -70,16 +70,89 @@ export const VOICE_COMMANDS: VoiceCommand[] = [
 ];
 
 /**
- * Parse voice input and extract command
+ * Levenshtein distance for fuzzy matching
  */
-export function parseVoiceCommand(transcript: string): { action: string; params?: string[] } | null {
+function levenshteinDistance(str1: string, str2: string): number {
+  const m = str1.length;
+  const n = str2.length;
+  const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (str1[i - 1] === str2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + 1
+        );
+      }
+    }
+  }
+
+  return dp[m][n];
+}
+
+/**
+ * Fuzzy match with threshold
+ */
+function fuzzyMatch(input: string, target: string, threshold: number = 0.7): boolean {
+  const distance = levenshteinDistance(input.toLowerCase(), target.toLowerCase());
+  const maxLen = Math.max(input.length, target.length);
+  const similarity = 1 - (distance / maxLen);
+  return similarity >= threshold;
+}
+
+/**
+ * Parse voice input and extract command with fuzzy matching
+ */
+export function parseVoiceCommand(transcript: string): { action: string; params?: string[]; confidence?: number } | null {
   const normalizedTranscript = transcript.trim();
   
+  // First try exact regex matching
   for (const command of VOICE_COMMANDS) {
     const match = normalizedTranscript.match(command.pattern);
     if (match) {
-      const params = match.slice(1).filter(Boolean); // Extract capture groups
-      return { action: command.action, params };
+      const params = match.slice(1).filter(Boolean);
+      return { action: command.action, params, confidence: 1.0 };
+    }
+  }
+  
+  // If no exact match, try fuzzy matching on key phrases
+  const lower = normalizedTranscript.toLowerCase();
+  const words = lower.split(/\s+/);
+  
+  // Check for fuzzy matches with common command keywords
+  const keywordMatches: { action: string; similarity: number }[] = [];
+  
+  for (const command of VOICE_COMMANDS) {
+    // Extract key words from pattern description
+    const keyWords = command.description.toLowerCase().split(/\s+/);
+    
+    for (const keyWord of keyWords) {
+      if (keyWord.length < 4) continue; // Skip short words
+      
+      for (const word of words) {
+        if (word.length < 4) continue;
+        
+        if (fuzzyMatch(word, keyWord, 0.75)) {
+          const distance = levenshteinDistance(word, keyWord);
+          const similarity = 1 - (distance / Math.max(word.length, keyWord.length));
+          keywordMatches.push({ action: command.action, similarity });
+        }
+      }
+    }
+  }
+  
+  // Return best fuzzy match if found
+  if (keywordMatches.length > 0) {
+    const best = keywordMatches.sort((a, b) => b.similarity - a.similarity)[0];
+    if (best.similarity >= 0.75) {
+      return { action: best.action, confidence: best.similarity };
     }
   }
   

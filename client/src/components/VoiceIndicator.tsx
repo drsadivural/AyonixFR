@@ -19,7 +19,7 @@ interface VoiceIndicatorProps {
 
 export function VoiceIndicator({ onCommand, showHistory = false }: VoiceIndicatorProps) {
   const [isListening, setIsListening] = useState(false);
-  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [recognition, setRecognition] = useState<any>(null);
   const [lastResult, setLastResult] = useState<VoiceRecognitionResult | null>(null);
   const [history, setHistory] = useState<VoiceRecognitionResult[]>([]);
   const [isSupported] = useState(isVoiceRecognitionSupported());

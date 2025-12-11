@@ -38,8 +38,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   try {
+    // Ensure required fields are present
     const values: InsertUser = {
       openId: user.openId,
+      name: user.name || 'Unknown User',
+      email: user.email || `user_${user.openId}@ayonix.local`,
     };
     const updateSet: Record<string, unknown> = {};
 
@@ -91,7 +94,13 @@ export async function updateUserProfile(userId: number, data: { name?: string; e
     throw new Error("Database not available");
   }
 
-  await db.update(users).set(data).where(eq(users.id, userId));
+  // Filter out null values to prevent TypeScript errors
+  const updateData: { name?: string; email?: string; profileCompleted?: boolean } = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.email !== undefined && data.email !== null) updateData.email = data.email;
+  if (data.profileCompleted !== undefined) updateData.profileCompleted = data.profileCompleted;
+
+  await db.update(users).set(updateData).where(eq(users.id, userId));
 }
 
 // Audit Logs (temporarily using events table until LSP cache clears)
