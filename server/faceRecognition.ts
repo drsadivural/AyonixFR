@@ -106,7 +106,7 @@ export function findBestMatch(
  */
 export function verifyFaces(
   faceEmbeddings: number[][],
-  enrolledFaces: Array<{ id: number; embedding: number[]; name: string; surname: string }>,
+  enrolledFaces: Array<{ id: number; embedding: number[]; name: string; surname: string; voiceSampleUrl?: string | null; voiceTranscript?: string | null; photoUrl?: string; email?: string | null }>,
   threshold: number = 0.6
 ): {
   detectedFaces: number;
@@ -115,6 +115,10 @@ export function verifyFaces(
     confidence: number;
     name: string;
     surname: string;
+    voiceSampleUrl?: string | null;
+    voiceTranscript?: string | null;
+    photoUrl?: string;
+    email?: string | null;
   }>;
 } {
   if (faceEmbeddings.length === 0) {
@@ -127,11 +131,16 @@ export function verifyFaces(
     const matchResult = findBestMatch(embedding, enrolledFaces, threshold);
     
     if (matchResult.matched && matchResult.enrolleeId) {
+      const enrollee = enrolledFaces.find(e => e.id === matchResult.enrolleeId);
       matches.push({
         enrolleeId: matchResult.enrolleeId,
         confidence: matchResult.confidence!,
         name: matchResult.name!,
         surname: matchResult.surname!,
+        voiceSampleUrl: enrollee?.voiceSampleUrl,
+        voiceTranscript: enrollee?.voiceTranscript,
+        photoUrl: enrollee?.photoUrl,
+        email: enrollee?.email,
       });
     }
   }

@@ -700,3 +700,20 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Show tutorial on first app launch (via VoiceOnboardingTutorial)
 - [x] Add "Help" button to access tutorial anytime (via voice command "help")
 - [x] Include voice command categories (Navigation, Enrollment, Verification)
+
+## Voice Playback During Verification
+- [x] Update verification match UI to show voice playback button
+- [x] Play enrollee's recorded voice sample when match occurs
+- [x] Add audio player controls (play/pause/stop)
+- [x] Handle cases where enrollee has no voice sample
+- [x] Add visual feedback during voice playback
+- [ ] Test voice playback with multiple matches
+
+## Voice-Based Enrollee Search
+- [x] Add "Find [name]" voice command to search enrollees
+- [x] Implement fuzzy search for voice-based name matching
+- [x] Speak search results aloud (count and names)
+- [x] Navigate to enrollee profile if single match found
+- [x] Show search results UI if multiple matches
+- [x] Handle no results case with voice feedback
+- [ ] Test voice search with various names

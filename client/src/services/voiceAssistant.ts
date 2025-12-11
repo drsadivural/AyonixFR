@@ -45,7 +45,7 @@ export const VOICE_COMMANDS: VoiceCommand[] = [
   { pattern: /(?:show|display)\s*recent\s*events/i, action: 'query_recent_events', description: 'Show recent events' },
   { pattern: /what(?:'s|\s*is)\s*my\s*role/i, action: 'query_user_role', description: 'Get current user role' },
   { pattern: /(?:who\s*am\s*i|my\s*profile)/i, action: 'query_user_profile', description: 'Get user profile' },
-  { pattern: /search\s*(?:for\s*)?(.+)/i, action: 'search_enrollee', description: 'Search for enrollee' },
+  { pattern: /(?:search|find|look for)\s*(?:for\s*)?(.+)/i, action: 'search_enrollee', description: 'Search for enrollee' },
   
   // Control Commands
   { pattern: /(?:stop|pause|halt)/i, action: 'stop', description: 'Stop current action' },

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Camera, CheckCircle2, XCircle, User, Calendar, MapPin } from 'lucide-react';
+import { Camera, CheckCircle2, XCircle, User, Calendar, MapPin, Volume2, VolumeX, Play, Pause } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { EmotionBadge } from '@/components/EmotionBadge';
@@ -33,6 +33,8 @@ export default function Verification() {
   const animationFrameRef = useRef<number | null>(null);
   const [landmarksImageData, setLandmarksImageData] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number>(0);
+  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
+  const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const { data: settings } = trpc.settings.get.useQuery();
 
@@ -577,6 +579,61 @@ export default function Verification() {
                           <span>Camera: {cameraSource}</span>
                         </div>
                       </div>
+
+                      {/* Voice Sample Playback */}
+                      {match.voiceSampleUrl && (
+                        <div className="pt-2 border-t">
+                          <p className="text-sm text-muted-foreground mb-2">Voice Sample</p>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (playingVoiceId === match.enrolleeId) {
+                                  // Stop playing
+                                  if (voiceAudioRef.current) {
+                                    voiceAudioRef.current.pause();
+                                    voiceAudioRef.current.currentTime = 0;
+                                  }
+                                  setPlayingVoiceId(null);
+                                } else {
+                                  // Start playing
+                                  if (voiceAudioRef.current) {
+                                    voiceAudioRef.current.pause();
+                                  }
+                                  const audio = new Audio(match.voiceSampleUrl);
+                                  audio.onended = () => setPlayingVoiceId(null);
+                                  audio.onerror = () => {
+                                    toast.error('Failed to play voice sample');
+                                    setPlayingVoiceId(null);
+                                  };
+                                  audio.play();
+                                  voiceAudioRef.current = audio;
+                                  setPlayingVoiceId(match.enrolleeId);
+                                }
+                              }}
+                              className="flex-1"
+                            >
+                              {playingVoiceId === match.enrolleeId ? (
+                                <>
+                                  <Pause className="h-4 w-4 mr-2" />
+                                  Stop Voice
+                                </>
+                              ) : (
+                                <>
+                                  <Volume2 className="h-4 w-4 mr-2" />
+                                  Play Voice
+                                </>
+                              )}
+                            </Button>
+                            {match.voiceTranscript && (
+                              <div className="flex-1 text-xs text-muted-foreground italic truncate">
+                                "{match.voiceTranscript}"
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Action Buttons */}
                       <div className="flex gap-2 pt-2">

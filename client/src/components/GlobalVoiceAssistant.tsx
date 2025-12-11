@@ -149,6 +149,40 @@ export function GlobalVoiceAssistant({ onCommand }: GlobalVoiceAssistantProps) {
       return;
     }
 
+    if (action === 'search_enrollee') {
+      const searchQuery = params?.[0] || '';
+      if (!searchQuery) {
+        speak("Please tell me who you want to find.");
+        return;
+      }
+      
+      // Search enrollees by name
+      const results = enrollees?.filter(e => 
+        `${e.name} ${e.surname}`.toLowerCase().includes(searchQuery.toLowerCase())
+      ) || [];
+      
+      if (results.length === 0) {
+        speak(`I couldn't find anyone named ${searchQuery} in the database.`);
+        return;
+      }
+      
+      if (results.length === 1) {
+        const person = results[0];
+        speak(`Found ${person.name} ${person.surname}. Opening their profile now.`);
+        navigate('/enrollees');
+        // Store ID for enrollees page to open profile
+        localStorage.setItem('voiceOpenEnrolleeId', person.id.toString());
+        return;
+      }
+      
+      // Multiple results
+      const names = results.slice(0, 5).map(e => `${e.name} ${e.surname}`).join(', ');
+      speak(`Found ${results.length} people: ${names}. Showing the list now.`);
+      navigate('/enrollees');
+      localStorage.setItem('voiceSearchQuery', searchQuery);
+      return;
+    }
+
     // Handle control commands
     if (action === 'help') {
       const response = VoiceResponseGenerator.getResponse(action);

@@ -515,6 +515,10 @@ export const appRouter = router({
           embedding: typeof e.faceEmbedding === 'string' ? JSON.parse(e.faceEmbedding) : e.faceEmbedding,
           name: e.name,
           surname: e.surname,
+          voiceSampleUrl: e.voiceSampleUrl,
+          voiceTranscript: e.voiceTranscript,
+          photoUrl: e.faceImageUrl,
+          email: e.email,
         }));
 
         // Verify faces
