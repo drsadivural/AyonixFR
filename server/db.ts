@@ -248,7 +248,7 @@ export async function getUserById(userId: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function createUser(user: { name: string; email: string; password: string; loginMethod: string; role: 'admin' | 'operator' | 'viewer' }): Promise<number> {
+export async function createUser(user: { name: string; email: string; password: string; loginMethod: string; role: 'admin' | 'user' }): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 

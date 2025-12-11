@@ -50,7 +50,7 @@ export const appRouter = router({
           email: input.email,
           password: hashedPassword,
           loginMethod: 'email',
-          role: 'viewer', // Default role, first user should be manually promoted to admin
+          role: 'user', // Default role, first user should be manually promoted to admin
         });
 
         // Generate JWT token
@@ -276,11 +276,15 @@ export const appRouter = router({
         // Extract face embedding using Python service with MediaPipe
         let faceEmbedding: number[];
         try {
+          console.log('[Enrollment] Extracting face from image, size:', input.imageBase64.length, 'bytes');
+          console.log('[Enrollment] Image preview:', input.imageBase64.substring(0, 100));
           faceEmbedding = await extractSingleFaceEmbedding(input.imageBase64);
-        } catch (error) {
+          console.log('[Enrollment] Successfully extracted face embedding, length:', faceEmbedding.length);
+        } catch (error: any) {
+          console.error('[Enrollment] Face extraction failed:', error.message);
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Failed to detect face in image. Please ensure the image contains a clear, frontal face.',
+            message: `Failed to detect face in image: ${error.message}`,
           });
         }
 
@@ -601,17 +605,23 @@ export const appRouter = router({
         return result;
       }),
     
-    // Get 3D landmarks for visualization
-    getLandmarks: protectedProcedure
+    // Get 3D landmarks for visualization (public for real-time camera feed)
+    getLandmarks: publicProcedure
       .input(z.object({
         imageBase64: z.string(),
       }))
       .mutation(async ({ input }) => {
         try {
+          console.log('[getLandmarks] Received request, image size:', input.imageBase64.length);
           const landmarks = await get3DLandmarks(input.imageBase64);
+          console.log('[getLandmarks] Got landmarks:', landmarks.length, 'faces');
+          if (landmarks.length > 0) {
+            console.log('[getLandmarks] First face has', landmarks[0].landmarks.length, 'landmarks');
+          }
           return { landmarks };
-        } catch (error) {
-          return { landmarks: [] };
+        } catch (error: any) {
+          console.error('[getLandmarks] Error:', error.message);
+          return { landmarks: [], error: error.message };
         }
       }),
   }),

@@ -36,7 +36,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
               name: fullName,
               email,
               password: '', // No password for OAuth users
-              role: 'viewer', // Default role
+              role: 'user', // Default role
               loginMethod: 'google',
             });
             user = newUser as any;

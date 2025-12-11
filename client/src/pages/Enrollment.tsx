@@ -494,7 +494,8 @@ export default function Enrollment() {
                   />
                   <canvas
                     ref={overlayCanvasRef}
-                    className={`absolute top-0 left-0 w-full h-full pointer-events-none ${!isCapturing || capturedImage ? 'hidden' : ''}`}
+                    className={`absolute top-0 left-0 pointer-events-none ${!isCapturing || capturedImage ? 'hidden' : ''}`}
+                    style={{ width: '100%', height: '100%' }}
                   />
                   
                   {/* Confidence Indicator */}

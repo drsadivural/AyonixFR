@@ -744,3 +744,29 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Test with different image formats and sizes
 - [x] Verify base64 decoding is working
 - [x] Fix face detection threshold or parameters (removed grayscale preprocessing)
+
+## Landmark Rendering Still Not Working
+- [ ] Add console logging to verify landmark fetch is being called
+- [ ] Check if landmarks state is being updated
+- [ ] Verify detectLandmarksLoop is running
+- [ ] Check if canvas context is valid
+- [ ] Verify video and canvas dimensions match
+- [ ] Test if drawing code is executing
+- [ ] Check for JavaScript errors in browser console
+
+## getLandmarks Authentication Issue
+- [ ] Change getLandmarks from protectedProcedure to publicProcedure
+- [ ] Test landmark fetching without authentication
+- [ ] Verify landmarks display in enrollment and verification
+
+## Enrollment Face Detection Failure
+- [ ] Debug why enrollment fails to detect faces
+- [ ] Check if captured image is being sent correctly
+- [ ] Verify Python service receives enrollment images
+- [ ] Test face detection with enrollment image format
+- [ ] Fix any image format or size issues
+
+## Registration Role Error
+- [x] Fix default role in registration from 'viewer' to 'user'
+- [x] Update all registration code to use new role system
+- [ ] Test registration with new role

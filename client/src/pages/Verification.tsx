@@ -439,7 +439,8 @@ export default function Verification() {
               />
               <canvas
                 ref={overlayCanvasRef}
-                className={`absolute top-0 left-0 w-full h-full pointer-events-none ${!isVerifying ? 'hidden' : ''}`}
+                className={`absolute top-0 left-0 pointer-events-none ${!isVerifying ? 'hidden' : ''}`}
+                style={{ width: '100%', height: '100%' }}
               />
               
               {/* Confidence Indicator */}

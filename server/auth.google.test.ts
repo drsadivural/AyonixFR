@@ -39,7 +39,7 @@ describe('Google OAuth User Creation', () => {
       name: 'Test User',
       email: 'test@example.com',
       loginMethod: 'google',
-      role: 'viewer' as const,
+      role: 'user' as const,
     };
 
     // Verify createUser function accepts Google OAuth user data
