@@ -47,7 +47,7 @@ function callPythonService(command: string, imageBase64: string): Promise<any> {
   return new Promise((resolve, reject) => {
     const pythonScript = path.resolve(process.cwd(), 'python_service/face_service.py');
     
-    const python = spawn('python3.11', [pythonScript, command, imageBase64]);
+    const python = spawn('/usr/bin/python3.11', [pythonScript, command, imageBase64]);
     
     let stdout = '';
     let stderr = '';
