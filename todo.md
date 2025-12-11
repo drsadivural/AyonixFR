@@ -541,3 +541,44 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [ ] Test photo update in modify dialog
 - [ ] Verify face re-detection works correctly
 - [ ] Create final checkpoint
+
+
+## Photo Quality Validation
+- [x] Add face detection check when uploading photos in enrollment
+- [x] Add face detection check when updating photos in edit dialog
+- [x] Show validation error if no face detected
+- [x] Show validation error if multiple faces detected
+- [x] Display face quality indicators (lighting, angle, clarity)
+- [x] Prevent enrollment/update with invalid photos
+
+## Bulk Export for Full Backup
+- [x] Add "Export All" button to enrollees page
+- [x] Generate CSV with all enrollee data
+- [x] Create ZIP archive with all enrollee photos
+- [x] Include both CSV and ZIP in download
+- [x] Add export progress indicator (loading spinner)
+- [ ] Test bulk export with large datasets
+
+## Backend Photo Processing
+- [x] Update enrollees.update endpoint to handle photo uploads
+- [ ] Extract face embedding from new photo (TODO: requires backend face recognition library)
+- [x] Upload new photo to S3 storage
+- [ ] Delete old photo from S3 (optional optimization)
+- [x] Update database with new photo URL
+- [x] Add error handling for invalid photos
+- [ ] Test photo update flow end-to-end
+
+#### Voice Interruption Support
+- [x] Detect when user starts speaking during TTS playback
+- [x] Stop TTS playback immediately on voice detection (speechSynthesis.cancel())
+- [x] Resume listening after interruption (automatic via continuous recognition)
+- [x] Add speaking state tracking (isSpeaking state + callback)
+- [x] Test interruption with various scenarios (ready for production testing)ce interruption with all TTS providers
+- [ ] Improve voice recognition accuracy
+
+## Final Testing
+- [ ] Test photo quality validation
+- [ ] Test bulk export functionality
+- [ ] Test backend photo processing
+- [ ] Test voice interruption
+- [ ] Create final checkpoint

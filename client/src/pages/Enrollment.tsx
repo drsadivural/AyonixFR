@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown } from 'lucide-react';
 import FaceQualityIndicator from '@/components/FaceQualityIndicator';
 import { speak } from '@/services/voiceAssistant';
+import { validatePhoto } from '@/services/photoValidation';
 
 type EnrollmentMethod = 'camera' | 'photo' | 'mobile';
 
@@ -248,12 +249,34 @@ export default function Enrollment() {
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const imageData = e.target?.result as string;
+        
+        // Validate photo quality
+        toast.info('Validating photo...');
+        const validation = await validatePhoto(imageData);
+        
+        if (!validation.isValid) {
+          toast.error(validation.error || 'Invalid photo');
+          return;
+        }
+        
+        if (validation.quality) {
+          const { lighting, angle, clarity } = validation.quality;
+          if (lighting === 'poor' || angle === 'side' || clarity === 'blurry') {
+            toast.warning(
+              `Photo quality: ${lighting} lighting, ${angle} angle, ${clarity} clarity. ` +
+              'Consider retaking for better results.'
+            );
+          } else {
+            toast.success('Photo validated successfully!');
+          }
+        }
+        
         setCapturedImage(imageData);
         // Get landmarks for the uploaded image
         setLandmarksImageData(imageData);

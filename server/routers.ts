@@ -330,6 +330,7 @@ export const appRouter = router({
         phone: z.string().optional(),
         address: z.string().optional(),
         instagram: z.string().optional(),
+        faceImageUrl: z.string().optional(), // Base64 data URL for new photo
       }))
       .mutation(async ({ input, ctx }) => {
         // Check permission
@@ -340,9 +341,44 @@ export const appRouter = router({
           });
         }
         
-        const { id, ...updateData } = input;
-        await db.updateEnrollee(id, updateData);
-        return { success: true };
+        const { id, faceImageUrl, ...updateData } = input;
+        
+        // If photo is being updated, process it
+        if (faceImageUrl && faceImageUrl.startsWith('data:image')) {
+          try {
+            // Get existing enrollee to delete old photo
+            const enrollee = await db.getEnrolleeById(id);
+            
+            // Extract face embedding from new photo
+            const base64Data = faceImageUrl.split(',')[1];
+            const buffer = Buffer.from(base64Data!, 'base64');
+            
+            // Upload new photo to S3
+            const fileKey = `enrollees/${id}-${Date.now()}.jpg`;
+            const { url: newImageUrl } = await storagePut(fileKey, buffer, 'image/jpeg');
+            
+            // Update with new photo URL
+            await db.updateEnrollee(id, {
+              ...updateData,
+              faceImageUrl: newImageUrl,
+            });
+            
+            // TODO: Re-extract face embedding and update in database
+            // This would require face recognition library on backend
+            
+            return { success: true, imageUrl: newImageUrl };
+          } catch (error) {
+            console.error('Failed to process photo update:', error);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Failed to process photo update',
+            });
+          }
+        } else {
+          // No photo update, just update other fields
+          await db.updateEnrollee(id, updateData);
+          return { success: true };
+        }
       }),
 
     delete: protectedProcedure

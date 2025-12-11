@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
-import { Search, Mail, Phone, MapPin, Instagram, Edit, Trash2, Loader2, Grid3x3, List, Trash } from "lucide-react";
-import { toast } from "sonner";
+import { Search, Mail, Phone, MapPin, Instagram, Edit, Trash2, Loader2, Grid3x3, List, Trash, Download } from "lucide-react";
+import { toast } from 'sonner';
+import { validatePhoto } from '@/services/photoValidation';
+import { exportEnrolleesWithPhotos } from '@/services/bulkExport';
 import { useLocation } from "wouter";
 
 export default function Enrollees() {
@@ -17,6 +19,7 @@ export default function Enrollees() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isExporting, setIsExporting] = useState(false);
   
   const [editForm, setEditForm] = useState({
     name: '',
@@ -120,10 +123,37 @@ export default function Enrollees() {
             Enroll New Person
           </Button>
           {enrollees && enrollees.length > 0 && (
-            <Button variant="destructive" onClick={() => setDeleteAllDialogOpen(true)}>
-              <Trash className="mr-2 h-4 w-4" />
-              Delete All
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  setIsExporting(true);
+                  try {
+                    await exportEnrolleesWithPhotos(enrollees.map(e => ({
+                      ...e,
+                      enrolledAt: new Date(e.enrolledAt),
+                    })));
+                    toast.success('Export completed successfully!');
+                  } catch (error) {
+                    toast.error('Failed to export enrollees');
+                  } finally {
+                    setIsExporting(false);
+                  }
+                }}
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                Export All
+              </Button>
+              <Button variant="destructive" onClick={() => setDeleteAllDialogOpen(true)}>
+                <Trash className="mr-2 h-4 w-4" />
+                Delete All
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -329,12 +359,35 @@ export default function Enrollees() {
                   <Input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (file) {
                         const reader = new FileReader();
-                        reader.onload = () => {
-                          setEditForm({ ...editForm, faceImageUrl: reader.result as string });
+                        reader.onload = async () => {
+                          const imageData = reader.result as string;
+                          
+                          // Validate photo quality
+                          toast.info('Validating photo...');
+                          const validation = await validatePhoto(imageData);
+                          
+                          if (!validation.isValid) {
+                            toast.error(validation.error || 'Invalid photo');
+                            return;
+                          }
+                          
+                          if (validation.quality) {
+                            const { lighting, angle, clarity } = validation.quality;
+                            if (lighting === 'poor' || angle === 'side' || clarity === 'blurry') {
+                              toast.warning(
+                                `Photo quality: ${lighting} lighting, ${angle} angle, ${clarity} clarity. ` +
+                                'Consider retaking for better results.'
+                              );
+                            } else {
+                              toast.success('Photo validated successfully!');
+                            }
+                          }
+                          
+                          setEditForm({ ...editForm, faceImageUrl: imageData });
                         };
                         reader.readAsDataURL(file);
                       }

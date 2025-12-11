@@ -241,6 +241,13 @@ export class VoiceResponseGenerator {
   }
 }
 
+// Global speaking state tracker
+let globalSpeakingCallback: ((isSpeaking: boolean) => void) | null = null;
+
+export function setSpeakingStateCallback(callback: (isSpeaking: boolean) => void) {
+  globalSpeakingCallback = callback;
+}
+
 /**
  * Text-to-Speech Helper
  * Speaks text using browser TTS
@@ -259,6 +266,18 @@ export function speak(text: string, options?: { rate?: number; pitch?: number; v
   utterance.pitch = options?.pitch || 1.0;
   utterance.volume = options?.volume || 1.0;
   utterance.lang = 'en-US';
+  
+  utterance.onstart = () => {
+    if (globalSpeakingCallback) globalSpeakingCallback(true);
+  };
+  
+  utterance.onend = () => {
+    if (globalSpeakingCallback) globalSpeakingCallback(false);
+  };
+  
+  utterance.onerror = () => {
+    if (globalSpeakingCallback) globalSpeakingCallback(false);
+  };
 
   window.speechSynthesis.speak(utterance);
 }

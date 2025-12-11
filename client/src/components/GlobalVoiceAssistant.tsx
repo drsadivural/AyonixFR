@@ -10,7 +10,8 @@ import {
   VoiceResponseGenerator, 
   speak, 
   getContextualCommands,
-  getAvailableCommands 
+  getAvailableCommands,
+  setSpeakingStateCallback
 } from '@/services/voiceAssistant';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -24,13 +25,18 @@ export function GlobalVoiceAssistant({ onCommand }: GlobalVoiceAssistantProps) {
   const [isEnabled, setIsEnabled] = useState(true);
   const [lastTranscript, setLastTranscript] = useState('');
   const [showCommands, setShowCommands] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [location, navigate] = useLocation();
   const { user } = useAuth();
   
   const { data: enrolleeCount } = trpc.enrollees.count.useQuery();
 
   useEffect(() => {
+    // Set up speaking state callback
+    setSpeakingStateCallback(setIsSpeaking);
+    
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       toast.error('Voice recognition not supported in this browser');
       setIsEnabled(false);
@@ -47,6 +53,13 @@ export function GlobalVoiceAssistant({ onCommand }: GlobalVoiceAssistantProps) {
     recognition.onresult = (event: any) => {
       const transcript = event.results[event.results.length - 1][0].transcript.trim();
       setLastTranscript(transcript);
+      
+      // Interrupt ongoing speech if user speaks
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+      }
+      
       handleVoiceCommand(transcript);
     };
 
