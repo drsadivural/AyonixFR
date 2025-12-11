@@ -265,6 +265,10 @@ export const appRouter = router({
         voiceBase64: z.string().optional(), // Base64-encoded audio file
       }))
       .mutation(async ({ input, ctx }) => {
+        // Log enrollment data for debugging
+        console.log('[Enrollment] Received enrollmentMethod:', input.enrollmentMethod, 'type:', typeof input.enrollmentMethod);
+        console.log('[Enrollment] Full input:', JSON.stringify({ ...input, imageBase64: input.imageBase64.substring(0, 50) + '...', voiceBase64: input.voiceBase64?.substring(0, 50) + '...' }));
+        
         // Check permission
         if (!hasPermission(ctx.user.role as UserRole, 'canEnroll')) {
           throw new TRPCError({

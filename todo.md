@@ -776,3 +776,11 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Add null check for user object in permission checks (updated usePermissions)
 - [x] Ensure user data is properly loaded after registration
 - [ ] Test registration → login → dashboard flow
+
+## Enrollment Issues
+- [ ] Fix face detection rectangle not displaying during camera feed
+- [x] Fix __dirname error in Python face service (using process.cwd())
+- [ ] Fix photo upload JSON parse error (image too large)
+- [ ] Debug why landmarks aren't rendering on canvas
+- [ ] Test camera enrollment with face detection
+- [ ] Test photo upload enrollment

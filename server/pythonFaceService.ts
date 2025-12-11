@@ -5,6 +5,11 @@
 
 import { spawn } from 'child_process';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 interface FaceDetectionResult {
   faces: Array<{
@@ -40,7 +45,7 @@ interface FaceExtractionResult {
  */
 function callPythonService(command: string, imageBase64: string): Promise<any> {
   return new Promise((resolve, reject) => {
-    const pythonScript = path.join(__dirname, '../python_service/face_service.py');
+    const pythonScript = path.resolve(process.cwd(), 'python_service/face_service.py');
     
     const python = spawn('python3.11', [pythonScript, command, imageBase64]);
     
