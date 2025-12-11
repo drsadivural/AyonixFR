@@ -119,6 +119,11 @@ export default function Enrollment() {
             videoRef.current.play().then(() => {
               setIsCapturing(true);
               detectLandmarksLoop();
+              
+              // Start fetching landmarks every 500ms
+              landmarkFetchIntervalRef.current = setInterval(() => {
+                fetchLandmarksFromVideo();
+              }, 500);
             }).catch(err => {
               console.error('Error playing video:', err);
               toast.error('Failed to start video stream');
@@ -129,6 +134,48 @@ export default function Enrollment() {
     } catch (error) {
       toast.error('Failed to access camera');
       console.error('Camera error:', error);
+    }
+  };
+
+  const lastLandmarkFetchRef = useRef<number>(0);
+  const landmarkFetchIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const fetchLandmarksFromVideo = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+    
+    // Capture current frame
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    try {
+      // Fetch landmarks from backend
+      const response = await fetch('/api/trpc/verification.getLandmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          json: { imageBase64: imageData }
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.result?.data?.landmarks) {
+          const landmarksArray = data.result.data.landmarks;
+          if (Array.isArray(landmarksArray) && landmarksArray.length > 0 && landmarksArray[0]) {
+            setLandmarks(landmarksArray[0].landmarks || landmarksArray[0]);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch landmarks:', error);
     }
   };
 
@@ -222,6 +269,10 @@ export default function Enrollment() {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
+    }
+    if (landmarkFetchIntervalRef.current) {
+      clearInterval(landmarkFetchIntervalRef.current);
+      landmarkFetchIntervalRef.current = null;
     }
     setIsCapturing(false);
     setLandmarks(null);

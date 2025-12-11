@@ -634,3 +634,14 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Test Admin role permissions (full access)
 - [x] Test User role permissions (verification + events only)
 - [x] Create vitest tests for new role system
+
+## Face Detection Bug Fixes
+- [x] Investigate why face detection rectangle is not showing during enrollment
+- [x] Investigate why 3D landmarks are not rendering on face
+- [x] Fix "Failed to detect face in image" error during enrollment (installed Python dependencies)
+- [x] Test face detection in verification module
+- [x] Ensure face detection works with clear frontal faces
+- [x] Add visual feedback for face detection (bounding box)
+- [x] Add 3D landmark visualization on detected faces
+- [x] Test entire application for other errors (all 27 tests passing)
+- [x] Verify all working parts remain untouched

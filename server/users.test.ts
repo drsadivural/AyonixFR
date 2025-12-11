@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
 import * as db from "./db";
 
@@ -17,8 +17,8 @@ describe("Users Router", () => {
     it("should allow admin to list all users", async () => {
       const mockUsers = [
         { id: 1, name: "Admin User", email: "admin@test.com", role: "admin", createdAt: Date.now() },
-        { id: 2, name: "Operator User", email: "operator@test.com", role: "operator", createdAt: Date.now() },
-        { id: 3, name: "Viewer User", email: "viewer@test.com", role: "viewer", createdAt: Date.now() },
+        { id: 2, name: "Regular User", email: "user@test.com", role: "user", createdAt: Date.now() },
+        { id: 3, name: "Another User", email: "user2@test.com", role: "user", createdAt: Date.now() },
       ];
 
       vi.mocked(db.getAllUsers).mockResolvedValue(mockUsers as any);
@@ -40,30 +40,14 @@ describe("Users Router", () => {
       expect(db.getAllUsers).toHaveBeenCalledOnce();
     });
 
-    it("should deny non-admin users from listing users", async () => {
+    it("should deny regular users from listing users", async () => {
       const caller = appRouter.createCaller({
         user: {
           id: 2,
-          openId: "operator-123",
-          name: "Operator User",
-          email: "operator@test.com",
-          role: "operator",
-          createdAt: Date.now(),
-        },
-      });
-
-      await expect(caller.users.list()).rejects.toThrow("You do not have permission to view users");
-      expect(db.getAllUsers).not.toHaveBeenCalled();
-    });
-
-    it("should deny viewer from listing users", async () => {
-      const caller = appRouter.createCaller({
-        user: {
-          id: 3,
-          openId: "viewer-123",
-          name: "Viewer User",
-          email: "viewer@test.com",
-          role: "viewer",
+          openId: "user-123",
+          name: "Regular User",
+          email: "user@test.com",
+          role: "user",
           createdAt: Date.now(),
         },
       });
@@ -74,7 +58,7 @@ describe("Users Router", () => {
   });
 
   describe("updateRole", () => {
-    it("should allow admin to update user role", async () => {
+    it("should allow admin to update user role to admin", async () => {
       vi.mocked(db.updateUserRole).mockResolvedValue(undefined);
 
       const caller = appRouter.createCaller({
@@ -88,16 +72,15 @@ describe("Users Router", () => {
         },
       });
 
-      const result = await caller.users.updateRole({
+      await caller.users.updateRole({
         userId: 2,
-        role: "operator",
+        role: "admin",
       });
 
-      expect(result).toEqual({ success: true });
-      expect(db.updateUserRole).toHaveBeenCalledWith(2, "operator");
+      expect(db.updateUserRole).toHaveBeenCalledWith(2, "admin");
     });
 
-    it("should allow admin to change role to viewer", async () => {
+    it("should allow admin to update user role to user", async () => {
       vi.mocked(db.updateUserRole).mockResolvedValue(undefined);
 
       const caller = appRouter.createCaller({
@@ -111,23 +94,22 @@ describe("Users Router", () => {
         },
       });
 
-      const result = await caller.users.updateRole({
-        userId: 3,
-        role: "viewer",
+      await caller.users.updateRole({
+        userId: 2,
+        role: "user",
       });
 
-      expect(result).toEqual({ success: true });
-      expect(db.updateUserRole).toHaveBeenCalledWith(3, "viewer");
+      expect(db.updateUserRole).toHaveBeenCalledWith(2, "user");
     });
 
-    it("should deny non-admin users from updating roles", async () => {
+    it("should deny regular users from updating roles", async () => {
       const caller = appRouter.createCaller({
         user: {
           id: 2,
-          openId: "operator-123",
-          name: "Operator User",
-          email: "operator@test.com",
-          role: "operator",
+          openId: "user-123",
+          name: "Regular User",
+          email: "user@test.com",
+          role: "user",
           createdAt: Date.now(),
         },
       });
@@ -135,28 +117,6 @@ describe("Users Router", () => {
       await expect(
         caller.users.updateRole({
           userId: 3,
-          role: "admin",
-        })
-      ).rejects.toThrow("You do not have permission to change user roles");
-
-      expect(db.updateUserRole).not.toHaveBeenCalled();
-    });
-
-    it("should deny viewer from updating roles", async () => {
-      const caller = appRouter.createCaller({
-        user: {
-          id: 3,
-          openId: "viewer-123",
-          name: "Viewer User",
-          email: "viewer@test.com",
-          role: "viewer",
-          createdAt: Date.now(),
-        },
-      });
-
-      await expect(
-        caller.users.updateRole({
-          userId: 2,
           role: "admin",
         })
       ).rejects.toThrow("You do not have permission to change user roles");

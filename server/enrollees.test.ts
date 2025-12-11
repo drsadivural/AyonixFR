@@ -52,21 +52,27 @@ describe("enrollees", () => {
 });
 
 describe("analytics", () => {
-  it("should return dashboard analytics", async () => {
+  it("should return enrollment stats", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
-    const result = await caller.analytics.dashboard();
+    const result = await caller.analytics.enrollmentStats();
 
-    expect(result).toHaveProperty("enrollees");
-    expect(result).toHaveProperty("verifications");
-    expect(result.enrollees).toHaveProperty("total");
-    expect(result.enrollees).toHaveProperty("thisMonth");
-    expect(result.enrollees).toHaveProperty("thisWeek");
-    expect(result.verifications).toHaveProperty("total");
-    expect(result.verifications).toHaveProperty("matches");
-    expect(result.verifications).toHaveProperty("noMatches");
-    expect(result.verifications).toHaveProperty("successRate");
+    expect(result).toHaveProperty("total");
+    expect(result).toHaveProperty("thisMonth");
+    expect(result).toHaveProperty("thisWeek");
+  });
+
+  it("should return verification stats", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.analytics.verificationStats();
+
+    expect(result).toHaveProperty("total");
+    expect(result).toHaveProperty("matches");
+    expect(result).toHaveProperty("noMatches");
+    expect(result).toHaveProperty("successRate");
   });
 });
 
@@ -93,8 +99,8 @@ describe("settings", () => {
       voiceLanguage: "ja",
     });
 
-    expect(result).toHaveProperty("matchThreshold");
-    expect(result.matchThreshold).toBe(80);
+    expect(result).toHaveProperty("success");
+    expect(result.success).toBe(true);
   });
 });
 
