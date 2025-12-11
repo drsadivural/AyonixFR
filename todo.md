@@ -735,3 +735,12 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Verify canvas dimensions match video dimensions
 - [x] Test if landmarks array has valid data
 - [x] Fix coordinate transformation if needed (changed .query to .mutation)
+
+## Face Detection Service Failure
+- [x] Test Python face service with sample image
+- [x] Verify MediaPipe is properly initialized
+- [x] Check if face detection model is loading correctly
+- [x] Add error logging to Python face service
+- [x] Test with different image formats and sizes
+- [x] Verify base64 decoding is working
+- [x] Fix face detection threshold or parameters (removed grayscale preprocessing)

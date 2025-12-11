@@ -78,11 +78,8 @@ class FaceRecognitionService:
             if image is None:
                 return {"error": "Failed to decode image"}
             
-            # Preprocess image
-            preprocessed = self.preprocess_image(image)
-            
-            # Convert BGR to RGB for MediaPipe
-            rgb_image = cv2.cvtColor(preprocessed, cv2.COLOR_BGR2RGB)
+            # Convert BGR to RGB for MediaPipe (MediaPipe requires RGB color images)
+            rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             
             # Detect faces
             results = self.face_detection.process(rgb_image)
@@ -126,11 +123,8 @@ class FaceRecognitionService:
             if image is None:
                 return {"error": "Failed to decode image"}
             
-            # Preprocess image
-            preprocessed = self.preprocess_image(image)
-            
-            # Convert BGR to RGB for MediaPipe
-            rgb_image = cv2.cvtColor(preprocessed, cv2.COLOR_BGR2RGB)
+            # Convert BGR to RGB for MediaPipe (MediaPipe requires RGB color images)
+            rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             
             # Process with Face Mesh
             results = self.face_mesh.process(rgb_image)
