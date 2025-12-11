@@ -645,3 +645,8 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Add 3D landmark visualization on detected faces
 - [x] Test entire application for other errors (all 27 tests passing)
 - [x] Verify all working parts remain untouched
+
+## Vite WebSocket Configuration Fix
+- [x] Fix Vite WebSocket connection error for HMR
+- [x] Configure correct WebSocket proxy URL (wss protocol, port 443)
+- [x] Test HMR functionality after fix
