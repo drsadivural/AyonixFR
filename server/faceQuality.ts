@@ -27,7 +27,16 @@ export interface FaceQualityResult {
 export async function assessFaceQuality(imageBase64: string): Promise<FaceQualityResult> {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(process.cwd(), 'python_service', 'face_quality.py');
-    const pythonProcess = spawn('python3.11', [scriptPath, imageBase64]);
+    // Remove PYTHONHOME to prevent conflicts with system Python
+    const env = { ...process.env };
+    delete env.PYTHONHOME;
+    delete env.PYTHONPATH;
+    env.PATH = '/usr/local/bin:/usr/bin:/bin';
+    
+    const pythonProcess = spawn('/usr/bin/python3.11', [scriptPath, imageBase64], {
+      cwd: process.cwd(),
+      env,
+    });
 
     let stdout = '';
     let stderr = '';

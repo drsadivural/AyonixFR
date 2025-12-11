@@ -47,7 +47,21 @@ function callPythonService(command: string, imageBase64: string): Promise<any> {
   return new Promise((resolve, reject) => {
     const pythonScript = path.resolve(process.cwd(), 'python_service/face_service.py');
     
-    const python = spawn('/usr/bin/python3.11', [pythonScript, command, imageBase64]);
+    console.log('[PythonService] Spawning Python process... [TIMESTAMP: 2025-12-12-17:57]');
+    console.log('[PythonService] Script path:', pythonScript);
+    console.log('[PythonService] Command:', command);
+    console.log('[PythonService] Image size:', imageBase64.length);
+    
+    // Remove PYTHONHOME to prevent conflicts with system Python
+    const env = { ...process.env };
+    delete env.PYTHONHOME;
+    delete env.PYTHONPATH;
+    env.PATH = '/usr/local/bin:/usr/bin:/bin';
+    
+    const python = spawn('/usr/bin/python3.11', [pythonScript, command, imageBase64], {
+      cwd: process.cwd(),
+      env,
+    });
     
     let stdout = '';
     let stderr = '';
@@ -75,6 +89,9 @@ function callPythonService(command: string, imageBase64: string): Promise<any> {
     });
     
     python.on('error', (error) => {
+      console.error('[PythonService] Spawn error:', error);
+      console.error('[PythonService] Error code:', (error as any).code);
+      console.error('[PythonService] Error path:', (error as any).path);
       reject(new Error(`Failed to spawn Python process: ${error.message}`));
     });
   });

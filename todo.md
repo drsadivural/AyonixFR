@@ -792,3 +792,14 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Ensure entire face is visible in preview
 - [x] Maintain proper aspect ratio for uploaded photos
 - [ ] Test photo enrollment with fixed display
+
+## Python Spawn Error Fix
+- [x] Diagnose ENOENT error when spawning Python process
+- [x] Identify UV Python 3.13 conflict with system Python 3.11
+- [x] Change back to absolute path /usr/bin/python3.11
+- [x] Remove PYTHONHOME and PYTHONPATH from spawn environment
+- [x] Update pythonFaceService.ts with clean environment
+- [x] Update faceQuality.ts with clean environment
+- [x] Test face detection in enrollment after fix - WORKING (478 landmarks, 5500% confidence)
+- [ ] Test face detection in verification after fix
+- [ ] Create checkpoint after successful testing
