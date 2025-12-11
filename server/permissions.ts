@@ -2,12 +2,11 @@
  * Role-Based Access Control (RBAC) Permissions
  * 
  * Roles:
- * - admin: Full system access, can manage users, settings, and all operations
- * - operator: Can enroll, verify, and manage enrollees but cannot change settings or manage users
- * - viewer: Read-only access, can view dashboard, enrollees, events, but cannot modify anything
+ * - admin: Full system access - can manage users, settings, enrollment, verification, and all operations
+ * - user: Limited access - can only perform verification and view events (no enrollment capabilities)
  */
 
-export type UserRole = 'admin' | 'operator' | 'viewer';
+export type UserRole = 'admin' | 'user';
 
 export interface Permission {
   // Enrollment permissions
@@ -49,6 +48,7 @@ export interface Permission {
 export function getPermissions(role: UserRole): Permission {
   switch (role) {
     case 'admin':
+      // Admin has full access to everything
       return {
         canEnroll: true,
         canBatchEnroll: true,
@@ -68,32 +68,13 @@ export function getPermissions(role: UserRole): Permission {
         canUseSimilaritySearch: true,
       };
     
-    case 'operator':
-      return {
-        canEnroll: true,
-        canBatchEnroll: true,
-        canVerify: true,
-        canViewEnrollees: true,
-        canEditEnrollee: true,
-        canDeleteEnrollee: false, // Operators cannot delete
-        canViewSettings: true,
-        canEditSettings: false, // Operators cannot change settings
-        canViewUsers: false,
-        canManageUsers: false,
-        canChangeUserRoles: false,
-        canViewEvents: true,
-        canExportEvents: true,
-        canViewDashboard: true,
-        canViewAnalytics: true,
-        canUseSimilaritySearch: true,
-      };
-    
-    case 'viewer':
+    case 'user':
+      // User can only verify and view events (no enrollment)
       return {
         canEnroll: false,
         canBatchEnroll: false,
-        canVerify: false,
-        canViewEnrollees: true,
+        canVerify: true,
+        canViewEnrollees: false,
         canEditEnrollee: false,
         canDeleteEnrollee: false,
         canViewSettings: false,
@@ -104,7 +85,7 @@ export function getPermissions(role: UserRole): Permission {
         canViewEvents: true,
         canExportEvents: false,
         canViewDashboard: true,
-        canViewAnalytics: true,
+        canViewAnalytics: false,
         canUseSimilaritySearch: false,
       };
   }
@@ -128,19 +109,10 @@ export function requireAdmin(role: UserRole): void {
 }
 
 /**
- * Require operator or admin role
- */
-export function requireOperatorOrAdmin(role: UserRole): void {
-  if (role !== 'admin' && role !== 'operator') {
-    throw new Error('Operator or admin access required');
-  }
-}
-
-/**
  * Check if role can perform write operations
  */
 export function canWrite(role: UserRole): boolean {
-  return role === 'admin' || role === 'operator';
+  return role === 'admin';
 }
 
 /**
@@ -151,15 +123,8 @@ export function isAdmin(role: UserRole): boolean {
 }
 
 /**
- * Check if role is operator
+ * Check if role is user
  */
-export function isOperator(role: UserRole): boolean {
-  return role === 'operator';
-}
-
-/**
- * Check if role is viewer
- */
-export function isViewer(role: UserRole): boolean {
-  return role === 'viewer';
+export function isUser(role: UserRole): boolean {
+  return role === 'user';
 }

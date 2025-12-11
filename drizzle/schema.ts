@@ -10,7 +10,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }).notNull().unique(),
   password: varchar("password", { length: 255 }), // Hashed password for email/password auth
   loginMethod: varchar("loginMethod", { length: 64 }).default("email").notNull(),
-  role: mysqlEnum("role", ["admin", "operator", "viewer"]).default("viewer").notNull(),
+  role: mysqlEnum("role", ["admin", "user"]).default("user").notNull(),
   profileCompleted: boolean("profileCompleted").default(true).notNull(),
   resetToken: varchar("resetToken", { length: 255 }),
   resetTokenExpiry: timestamp("resetTokenExpiry"),

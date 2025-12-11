@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, User, Eye } from "lucide-react";
+import { Shield, User, Users } from 'lucide-react';
 
 export default function UserManagement() {
   const utils = trpc.useUtils();
@@ -20,7 +20,7 @@ export default function UserManagement() {
     },
   });
 
-  const handleRoleChange = (userId: number, newRole: 'admin' | 'operator' | 'viewer') => {
+  const handleRoleChange = (userId: number, newRole: 'admin' | 'user') => {
     updateRoleMutation.mutate({ userId, role: newRole });
   };
 
@@ -28,10 +28,8 @@ export default function UserManagement() {
     switch (role) {
       case 'admin':
         return <Shield className="h-5 w-5 text-blue-600" />;
-      case 'operator':
+      case 'user':
         return <User className="h-5 w-5 text-green-600" />;
-      case 'viewer':
-        return <Eye className="h-5 w-5 text-gray-600" />;
       default:
         return <User className="h-5 w-5 text-gray-400" />;
     }
@@ -41,10 +39,8 @@ export default function UserManagement() {
     switch (role) {
       case 'admin':
         return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'operator':
+      case 'user':
         return 'bg-green-100 text-green-800 border-green-300';
-      case 'viewer':
-        return 'bg-gray-100 text-gray-800 border-gray-300';
       default:
         return 'bg-gray-100 text-gray-600 border-gray-300';
     }
@@ -60,6 +56,11 @@ export default function UserManagement() {
     );
   }
 
+  // Calculate statistics
+  const totalUsers = users?.length || 0;
+  const adminCount = users?.filter(u => u.role === 'admin').length || 0;
+  const regularUserCount = users?.filter(u => u.role === 'user').length || 0;
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
@@ -67,6 +68,45 @@ export default function UserManagement() {
         <p className="text-muted-foreground mt-2">
           Manage user roles and permissions for the Ayonix Face Recognition System
         </p>
+      </div>
+
+      {/* User Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                <p className="text-3xl font-bold text-foreground">{totalUsers}</p>
+              </div>
+              <Users className="h-10 w-10 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Administrators</p>
+                <p className="text-3xl font-bold text-blue-600">{adminCount}</p>
+              </div>
+              <Shield className="h-10 w-10 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Regular Users</p>
+                <p className="text-3xl font-bold text-green-600">{regularUserCount}</p>
+              </div>
+              <User className="h-10 w-10 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -106,7 +146,7 @@ export default function UserManagement() {
 
                       <Select
                         value={user.role}
-                        onValueChange={(value) => handleRoleChange(user.id, value as 'admin' | 'operator' | 'viewer')}
+                        onValueChange={(value) => handleRoleChange(user.id, value as 'admin' | 'user')}
                         disabled={updateRoleMutation.isPending}
                       >
                         <SelectTrigger className="w-[140px]">
@@ -119,16 +159,10 @@ export default function UserManagement() {
                               <span>Admin</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="operator">
+                          <SelectItem value="user">
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4 text-green-600" />
-                              <span>Operator</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="viewer">
-                            <div className="flex items-center gap-2">
-                              <Eye className="h-4 w-4 text-gray-600" />
-                              <span>Viewer</span>
+                              <span>User</span>
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -166,19 +200,9 @@ export default function UserManagement() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-green-50 border border-green-200">
               <User className="h-6 w-6 text-green-600 mt-0.5" />
               <div>
-                <div className="font-semibold text-green-900">Operator</div>
+                <div className="font-semibold text-green-900">User</div>
                 <div className="text-sm text-green-700 mt-1">
-                  Can enroll new faces, perform verification, and view enrollees. Cannot modify system settings or manage users.
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-gray-50 border border-gray-200">
-              <Eye className="h-6 w-6 text-gray-600 mt-0.5" />
-              <div>
-                <div className="font-semibold text-gray-900">Viewer</div>
-                <div className="text-sm text-gray-700 mt-1">
-                  Read-only access to view enrollees and verification logs. Cannot enroll faces or modify any data.
+                  Limited access - can perform verification and view events only. Cannot enroll faces or modify any data.
                 </div>
               </div>
             </div>

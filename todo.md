@@ -622,3 +622,15 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Add voice feedback for failed/unrecognized commands
 - [x] Implement voice command confirmation for critical actions
 - [ ] Add noise cancellation for better voice recognition (requires hardware/browser support)
+
+## User Management Enhancement
+- [x] Update role schema to use only Admin and User (remove operator and viewer)
+- [x] Update role permissions matrix (Admin: full access, User: verification + events only)
+- [x] Update backend permission checks for new role system
+- [x] Enhance user management UI to show all registered users
+- [x] Add role change dropdown (Admin can change any user's role)
+- [x] Add user statistics (total users, admins, regular users)
+- [x] Restrict enrollment features for User role
+- [x] Test Admin role permissions (full access)
+- [x] Test User role permissions (verification + events only)
+- [x] Create vitest tests for new role system

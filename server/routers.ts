@@ -13,7 +13,7 @@ import { assessFaceQuality } from './faceQuality';
 import { generateVoiceComment, getTimeOfDay, getPreviousComments, getMatchCount, detectFacialExpression } from './speechEngine';
 import { textToSpeech, useBrowserTTS } from './textToSpeech';
 import { TRPCError } from "@trpc/server";
-import { hasPermission, requireAdmin, requireOperatorOrAdmin, type UserRole } from './permissions';
+import { hasPermission, requireAdmin, type UserRole } from './permissions';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from './_core/env';
@@ -766,7 +766,7 @@ export const appRouter = router({
     updateRole: protectedProcedure
       .input(z.object({
         userId: z.number(),
-        role: z.enum(['admin', 'operator', 'viewer']),
+        role: z.enum(['admin', 'user']),
       }))
       .mutation(async ({ ctx, input }) => {
         // Only admins can change user roles
