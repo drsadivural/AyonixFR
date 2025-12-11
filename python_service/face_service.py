@@ -155,10 +155,15 @@ class FaceRecognitionService:
                 # Use key facial features for embedding generation
                 embedding = self._generate_embedding_from_landmarks(face_landmarks, w, h)
                 
+                # Calculate confidence based on landmark quality
+                # Higher confidence if landmarks are well-distributed and clear
+                confidence = self._calculate_landmark_confidence(landmarks_3d, w, h)
+                
                 all_faces.append({
                     "landmarks": landmarks_3d,
                     "embedding": embedding.tolist(),
-                    "landmark_count": len(landmarks_3d)
+                    "landmark_count": len(landmarks_3d),
+                    "confidence": confidence
                 })
             
             return {
@@ -247,6 +252,58 @@ class FaceRecognitionService:
             embedding = features_array[:128]
         
         return embedding
+    
+    def _calculate_landmark_confidence(self, landmarks_3d: List[Dict], width: int, height: int) -> float:
+        """
+        Calculate confidence score (0.0-1.0) based on landmark quality
+        Factors:
+        - Face size (larger is better)
+        - Face position (centered is better)
+        - Landmark distribution (well-spread is better)
+        """
+        if not landmarks_3d or len(landmarks_3d) == 0:
+            return 0.0
+        
+        # Calculate face bounding box
+        xs = [lm["x"] for lm in landmarks_3d]
+        ys = [lm["y"] for lm in landmarks_3d]
+        
+        face_width = max(xs) - min(xs)
+        face_height = max(ys) - min(ys)
+        face_center_x = (max(xs) + min(xs)) / 2
+        face_center_y = (max(ys) + min(ys)) / 2
+        
+        # Factor 1: Face size (0.0-0.4)
+        # Optimal face size is 30-70% of image width
+        size_ratio = face_width / width
+        if 0.3 <= size_ratio <= 0.7:
+            size_score = 0.4
+        elif 0.2 <= size_ratio < 0.3 or 0.7 < size_ratio <= 0.8:
+            size_score = 0.3
+        elif 0.15 <= size_ratio < 0.2 or 0.8 < size_ratio <= 0.9:
+            size_score = 0.2
+        else:
+            size_score = 0.1
+        
+        # Factor 2: Face centering (0.0-0.3)
+        # Face should be centered in frame
+        center_offset_x = abs(face_center_x - width / 2) / (width / 2)
+        center_offset_y = abs(face_center_y - height / 2) / (height / 2)
+        center_score = max(0.0, 0.3 - (center_offset_x + center_offset_y) * 0.15)
+        
+        # Factor 3: Landmark distribution (0.0-0.3)
+        # Well-distributed landmarks indicate good detection
+        z_values = [lm["z"] for lm in landmarks_3d]
+        z_std = np.std(z_values) if len(z_values) > 0 else 0
+        # Normalize z_std relative to face width
+        z_std_normalized = z_std / (face_width + 1e-6)
+        distribution_score = min(0.3, z_std_normalized * 0.5)
+        
+        # Total confidence
+        confidence = size_score + center_score + distribution_score
+        
+        # Ensure confidence is between 0.0 and 1.0
+        return max(0.0, min(1.0, confidence))
 
 def main():
     """

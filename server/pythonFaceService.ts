@@ -29,6 +29,7 @@ interface FaceExtractionResult {
     }>;
     embedding: number[];
     landmark_count: number;
+    confidence?: number;
   }>;
   count: number;
   error?: string;
@@ -139,14 +140,16 @@ export async function extractMultipleFaceEmbeddings(imageBase64: string): Promis
 }
 
 /**
- * Get 3D landmarks for visualization
+ * Get 3D landmarks for visualization with confidence scores
  */
 export async function get3DLandmarks(imageBase64: string): Promise<Array<{
   landmarks: Array<{ x: number; y: number; z: number }>;
+  confidence: number;
 }>> {
   const result = await extractFaceLandmarksAndEmbedding(imageBase64);
   
   return result.faces.map(face => ({
     landmarks: face.landmarks,
+    confidence: face.confidence || 0.95, // Default high confidence if not provided
   }));
 }

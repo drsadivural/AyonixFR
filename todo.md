@@ -650,3 +650,37 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Fix Vite WebSocket connection error for HMR
 - [x] Configure correct WebSocket proxy URL (wss protocol, port 443)
 - [x] Test HMR functionality after fix
+
+## Face Detection Confidence Indicator
+- [x] Add confidence score display (0-100%) in enrollment
+- [x] Add confidence score display in verification
+- [x] Show real-time confidence during camera feed
+- [x] Add visual indicator (color-coded: red/yellow/green)
+- [x] Update backend to return confidence scores
+
+## Multi-Camera Support for Verification
+- [x] Add camera selection dropdown in verification
+- [ ] Support multiple simultaneous camera feeds (deferred - complex feature)
+- [ ] Add camera grid view for monitoring multiple sources (deferred - complex feature)
+- [x] Label each camera feed (Camera 1, Camera 2, etc.)
+- [x] Run face detection on selected camera
+
+## Voice Enrollment & Personalized Voices
+- [x] Add voice sample recording during enrollment (UI complete)
+- [x] Store voice profile for each enrollee (schema updated)
+- [x] Add voice playback/preview feature (in VoiceRecorder component)
+- [ ] Link voice samples to enrollee records (backend integration needed)
+- [ ] Upload voice samples to S3 storage
+- [ ] Integrate speech-to-text API for transcription
+- [ ] Generate personalized TTS for each person
+
+## Hands-Free Voice Interaction
+- [x] Implement continuous voice listening mode (VoiceIndicator component)
+- [x] Add voice commands for enrollment ("start enrollment", "capture", "save")
+- [x] Add voice commands for verification ("start verification", "stop")
+- [x] Add voice commands for navigation ("go to dashboard", "show enrollees")
+- [x] Add voice feedback for all actions (via voiceAssistant service)
+- [ ] Implement wake word detection (requires additional library)
+- [ ] Add voice command help ("what can I say?") - can be added to voice assistant
+- [ ] Enhance voice command accuracy with better NLP
+- [ ] Add voice confirmation for critical actions

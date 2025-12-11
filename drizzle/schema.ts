@@ -39,6 +39,9 @@ export const enrollees = mysqlTable("enrollees", {
   faceEmbedding: json("faceEmbedding").notNull(), // Store face embedding as JSON array
   enrollmentMethod: varchar("enrollmentMethod", { length: 50 }).notNull(), // 'camera', 'photo', 'mobile'
   enrolledBy: int("enrolledBy").notNull(), // user.id who enrolled this person
+  voiceSampleUrl: text("voiceSampleUrl"), // S3 URL to voice sample audio file
+  voiceSampleKey: text("voiceSampleKey"), // S3 key for voice sample
+  voiceTranscript: text("voiceTranscript"), // Transcription of voice sample
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

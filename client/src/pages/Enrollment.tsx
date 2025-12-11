@@ -13,6 +13,7 @@ import { ChevronDown } from 'lucide-react';
 import FaceQualityIndicator from '@/components/FaceQualityIndicator';
 import { speak } from '@/services/voiceAssistant';
 import { validatePhoto } from '@/services/photoValidation';
+import VoiceRecorder from '@/components/VoiceRecorder';
 
 type EnrollmentMethod = 'camera' | 'photo' | 'mobile';
 
@@ -25,6 +26,7 @@ export default function Enrollment() {
   const [faceQuality, setFaceQuality] = useState<any>(null);
   const [cameraDevices, setCameraDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
+  const [confidence, setConfidence] = useState<number>(0);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -33,6 +35,8 @@ export default function Enrollment() {
     phone: '',
     address: '',
     instagram: '',
+    voiceBlob: null as Blob | null,
+    voiceTranscript: '',
   });
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -60,6 +64,8 @@ export default function Enrollment() {
         phone: '',
         address: '',
         instagram: '',
+        voiceBlob: null,
+        voiceTranscript: '',
       });
       setCapturedImage(null);
       setLandmarks(null);
@@ -171,6 +177,10 @@ export default function Enrollment() {
           const landmarksArray = data.result.data.landmarks;
           if (Array.isArray(landmarksArray) && landmarksArray.length > 0 && landmarksArray[0]) {
             setLandmarks(landmarksArray[0].landmarks || landmarksArray[0]);
+            // Extract confidence score
+            if (landmarksArray[0].confidence !== undefined) {
+              setConfidence(landmarksArray[0].confidence);
+            }
           }
         }
       }
@@ -464,6 +474,32 @@ export default function Enrollment() {
                     style={{ mixBlendMode: 'screen' }}
                   />
                   
+                  {/* Confidence Indicator */}
+                  {isCapturing && !capturedImage && landmarks && (
+                    <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg z-20">
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs text-white/70">Detection</div>
+                        <div className={`text-lg font-bold ${
+                          confidence >= 0.7 ? 'text-green-400' :
+                          confidence >= 0.5 ? 'text-yellow-400' :
+                          'text-red-400'
+                        }`}>
+                          {Math.round(confidence * 100)}%
+                        </div>
+                      </div>
+                      <div className="w-32 h-1.5 bg-white/20 rounded-full mt-1 overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-300 ${
+                            confidence >= 0.7 ? 'bg-green-400' :
+                            confidence >= 0.5 ? 'bg-yellow-400' :
+                            'bg-red-400'
+                          }`}
+                          style={{ width: `${confidence * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
                   {capturedImage && (
                     <img src={capturedImage} alt="Captured" className="w-full h-full object-cover" />
                   )}
@@ -638,6 +674,24 @@ export default function Enrollment() {
                 </div>
               </CollapsibleContent>
             </Collapsible>
+
+            {/* Voice Sample Recording */}
+            <div className="space-y-2 pt-4 border-t">
+              <Label>Voice Sample (Optional)</Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Record a short voice sample to personalize voice responses during verification
+              </p>
+              <VoiceRecorder 
+                onRecordingComplete={(audioBlob: Blob, transcript: string) => {
+                  setFormData({ ...formData, voiceBlob: audioBlob, voiceTranscript: transcript });
+                }}
+              />
+              {formData.voiceTranscript && (
+                <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                  <strong>Transcript:</strong> {formData.voiceTranscript}
+                </div>
+              )}
+            </div>
 
             <Button 
               onClick={handleEnroll} 

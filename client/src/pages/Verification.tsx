@@ -15,6 +15,9 @@ export default function Verification() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [cameraSource, setCameraSource] = useState('webcam');
   const [matchResults, setMatchResults] = useState<any[]>([]);
+  const [cameraDevices, setCameraDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCameras, setSelectedCameras] = useState<string[]>([]);
+  const [multiCameraMode, setMultiCameraMode] = useState(false);
   const [landmarks, setLandmarks] = useState<Array<{x: number, y: number, z: number}> | null>(null);
   const [voiceComments, setVoiceComments] = useState<Array<{ text: string; timestamp: Date; personName: string }>>([]);
   const [currentEmotion, setCurrentEmotion] = useState<EmotionResult | null>(null);
@@ -29,6 +32,7 @@ export default function Verification() {
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const [landmarksImageData, setLandmarksImageData] = useState<string | null>(null);
+  const [confidence, setConfidence] = useState<number>(0);
 
   const { data: settings } = trpc.settings.get.useQuery();
 
@@ -130,6 +134,10 @@ export default function Verification() {
             if (allLandmarks.length > 0) {
               setLandmarks(allLandmarks);
             }
+            // Extract confidence from first face
+            if (landmarksArray[0]?.confidence !== undefined) {
+              setConfidence(landmarksArray[0].confidence);
+            }
           }
         }
       }
@@ -140,13 +148,19 @@ export default function Verification() {
 
   const startVerification = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      const constraints: MediaStreamConstraints = {
+        video: cameraSource && cameraSource !== 'default' ? {
+          deviceId: { exact: cameraSource },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } : {
           width: { ideal: 1280 },
           height: { ideal: 720 },
           facingMode: 'user'
-        } 
-      });
+        }
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -347,6 +361,24 @@ export default function Verification() {
     }
   };
 
+  // Enumerate camera devices on mount
+  useEffect(() => {
+    const enumerateDevices = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setCameraDevices(videoDevices);
+        if (videoDevices.length > 0) {
+          setCameraSource(videoDevices[0]!.deviceId);
+        }
+      } catch (error) {
+        console.error('Failed to enumerate devices:', error);
+      }
+    };
+    
+    enumerateDevices();
+  }, []);
+
   useEffect(() => {
     return () => {
       stopVerification();
@@ -376,9 +408,15 @@ export default function Verification() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="webcam">Webcam</SelectItem>
-                    <SelectItem value="external">External Camera</SelectItem>
-                    <SelectItem value="mobile">Mobile Device</SelectItem>
+                    {cameraDevices.length > 0 ? (
+                      cameraDevices.map((device, index) => (
+                        <SelectItem key={device.deviceId} value={device.deviceId}>
+                          {device.label || `Camera ${index + 1}`}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="default">Default Camera</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -406,6 +444,32 @@ export default function Verification() {
                 className={`absolute top-0 left-0 w-full h-full pointer-events-none ${!isVerifying ? 'hidden' : ''}`}
                 style={{ mixBlendMode: 'screen' }}
               />
+              
+              {/* Confidence Indicator */}
+              {isVerifying && landmarks && (
+                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg z-20">
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-white/70">Detection</div>
+                    <div className={`text-lg font-bold ${
+                      confidence >= 0.7 ? 'text-green-400' :
+                      confidence >= 0.5 ? 'text-yellow-400' :
+                      'text-red-400'
+                    }`}>
+                      {Math.round(confidence * 100)}%
+                    </div>
+                  </div>
+                  <div className="w-32 h-1.5 bg-white/20 rounded-full mt-1 overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-300 ${
+                        confidence >= 0.7 ? 'bg-green-400' :
+                        confidence >= 0.5 ? 'bg-yellow-400' :
+                        'bg-red-400'
+                      }`}
+                      style={{ width: `${confidence * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
               
               <canvas ref={canvasRef} className="hidden" />
             </div>
