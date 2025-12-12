@@ -803,3 +803,37 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Test face detection in enrollment after fix - WORKING (478 landmarks, 5500% confidence)
 - [ ] Test face detection in verification after fix
 - [ ] Create checkpoint after successful testing
+
+## Fix Canvas Overlay Alignment (After Sandbox Reset)
+- [ ] Reinstall Python dependencies (opencv-python, mediapipe, numpy)
+- [ ] Reinstall MediaPipe JavaScript packages
+- [ ] Calculate letterbox offset for object-contain video
+- [ ] Apply offset to canvas overlay coordinates
+- [ ] Fix confidence score double multiplication (showing 5600% instead of 56%)
+- [ ] Test rectangle alignment
+- [ ] Save checkpoint
+
+## MediaPipe Face Rectangle Overlay Fix
+- [x] Install @mediapipe/face_detection and @mediapipe/camera_utils packages
+- [x] Add MediaPipe imports to Enrollment.tsx
+- [x] Add MediaPipe refs (faceDetectionRef, mediaPipeCameraRef, detectedFaceBoundsRef) to Enrollment.tsx
+- [x] Initialize MediaPipe Face Detection in startCamera with CDN locateFile
+- [x] Configure MediaPipe with short model and 0.5 confidence threshold
+- [x] Implement onResults callback to update detectedFaceBoundsRef
+- [x] Start MediaPipeCamera with onFrame callback
+- [x] Rewrite detectLandmarksLoop as useCallback with letterbox offset calculation
+- [x] Calculate video aspect ratio vs display aspect ratio
+- [x] Compute scale and offset for object-contain CSS
+- [x] Draw green rectangle using MediaPipe normalized coordinates (0-1)
+- [x] Apply scale and offset to rectangle coordinates
+- [x] Remove old landmark mesh drawing code
+- [x] Add MediaPipe imports to Verification.tsx
+- [x] Add MediaPipe refs to Verification.tsx
+- [x] Initialize MediaPipe Face Detection in startVerification
+- [x] Rewrite detectLandmarksLoop in Verification.tsx with same letterbox logic
+- [x] Fix confidence score display (multiply by 100 once, not twice)
+- [x] Change landmark fetch interval from 500ms to 100ms for faster response
+- [x] Restart dev server to clear Vite parse error cache
+- [x] Test enrollment page (camera not available in sandbox, but code loads without errors)
+- [x] Test verification page (camera not available in sandbox, but code loads without errors)
+- [ ] Save checkpoint with MediaPipe face rectangle overlay implementation

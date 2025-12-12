@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { FaceDetection } from '@mediapipe/face_detection';
+import { Camera as MediaPipeCamera } from '@mediapipe/camera_utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -31,6 +33,9 @@ export default function Verification() {
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const faceDetectionRef = useRef<FaceDetection | null>(null);
+  const mediaPipeCameraRef = useRef<MediaPipeCamera | null>(null);
+  const detectedFaceBoundsRef = useRef<{xCenter: number, yCenter: number, width: number, height: number} | null>(null);
   const [landmarksImageData, setLandmarksImageData] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number>(0);
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
@@ -154,16 +159,55 @@ export default function Verification() {
         videoRef.current.onloadedmetadata = () => {
           if (videoRef.current) {
             videoRef.current.play().then(() => {
+              // Initialize MediaPipe Face Detection
+              if (!faceDetectionRef.current) {
+                faceDetectionRef.current = new FaceDetection({
+                  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`
+                });
+                faceDetectionRef.current.setOptions({
+                  model: 'short',
+                  minDetectionConfidence: 0.5
+                });
+                faceDetectionRef.current.onResults((results) => {
+                  if (results.detections && results.detections.length > 0) {
+                    const detection = results.detections[0];
+                    const box = detection.boundingBox;
+                    detectedFaceBoundsRef.current = {
+                      xCenter: box.xCenter,
+                      yCenter: box.yCenter,
+                      width: box.width,
+                      height: box.height
+                    };
+                  } else {
+                    detectedFaceBoundsRef.current = null;
+                  }
+                });
+              }
+              
+              // Start MediaPipe camera
+              if (videoRef.current && faceDetectionRef.current) {
+                mediaPipeCameraRef.current = new MediaPipeCamera(videoRef.current, {
+                  onFrame: async () => {
+                    if (videoRef.current && faceDetectionRef.current) {
+                      await faceDetectionRef.current.send({ image: videoRef.current });
+                    }
+                  },
+                  width: 1280,
+                  height: 720
+                });
+                mediaPipeCameraRef.current.start();
+              }
+              
               // Start emotion detection
               setEmotionDetectionActive(true);
               startEmotionDetection();
               setIsVerifying(true);
               detectLandmarksLoop();
               
-              // Start fetching landmarks every 500ms
+              // Start fetching landmarks every 100ms
               landmarkFetchIntervalRef.current = setInterval(() => {
                 fetchLandmarksFromVideo();
-              }, 500);
+              }, 100);
             }).catch(err => {
               console.error('Error playing video:', err);
               toast.error('Failed to start video stream');
@@ -177,8 +221,8 @@ export default function Verification() {
     }
   };
 
-  const detectLandmarksLoop = () => {
-    if (!videoRef.current || !overlayCanvasRef.current || !isVerifying) {
+  const detectLandmarksLoop = useCallback(() => {
+    if (!videoRef.current || !overlayCanvasRef.current) {
       return;
     }
 
@@ -191,88 +235,60 @@ export default function Verification() {
       return;
     }
 
-    // Set overlay canvas size to match video
-    overlayCanvas.width = video.videoWidth;
-    overlayCanvas.height = video.videoHeight;
+    // Get display size and video size
+    const displayWidth = video.clientWidth;
+    const displayHeight = video.clientHeight;
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+    
+    // Set canvas to match display size
+    overlayCanvas.width = displayWidth;
+    overlayCanvas.height = displayHeight;
+
+    // Calculate letterbox offset for object-contain
+    const videoAspect = videoWidth / videoHeight;
+    const displayAspect = displayWidth / displayHeight;
+    
+    let scale, offsetX, offsetY;
+    if (displayAspect > videoAspect) {
+      // Letterbox on sides
+      scale = displayHeight / videoHeight;
+      offsetX = (displayWidth - videoWidth * scale) / 2;
+      offsetY = 0;
+    } else {
+      // Letterbox on top/bottom
+      scale = displayWidth / videoWidth;
+      offsetX = 0;
+      offsetY = (displayHeight - videoHeight * scale) / 2;
+    }
 
     // Clear previous drawings
-    ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    ctx.clearRect(0, 0, displayWidth, displayHeight);
 
-    // Draw landmarks if available
-    if (landmarks && landmarks.length > 0) {
-      // Calculate bounding box
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      landmarks.forEach(landmark => {
-        minX = Math.min(minX, landmark.x);
-        minY = Math.min(minY, landmark.y);
-        maxX = Math.max(maxX, landmark.x);
-        maxY = Math.max(maxY, landmark.y);
-      });
+    // Draw face rectangle from MediaPipe detection
+    const faceBounds = detectedFaceBoundsRef.current;
+    if (faceBounds) {
+      // MediaPipe returns normalized coordinates (0-1)
+      const x = faceBounds.xCenter * videoWidth;
+      const y = faceBounds.yCenter * videoHeight;
+      const w = faceBounds.width * videoWidth;
+      const h = faceBounds.height * videoHeight;
+      
+      // Apply scale and offset
+      const displayX = (x - w/2) * scale + offsetX;
+      const displayY = (y - h/2) * scale + offsetY;
+      const displayW = w * scale;
+      const displayH = h * scale;
       
       // Draw bounding box
       ctx.strokeStyle = '#10b981'; // Green
       ctx.lineWidth = 3;
-      ctx.strokeRect(minX - 10, minY - 10, maxX - minX + 20, maxY - minY + 20);
-      
-      // Draw landmarks
-      ctx.fillStyle = '#3b82f6';
-      ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 1;
-
-      // Draw all landmark points
-      landmarks.forEach((landmark) => {
-        const x = landmark.x;
-        const y = landmark.y;
-        
-        // Draw point
-        ctx.beginPath();
-        ctx.arc(x, y, 1, 0, 2 * Math.PI);
-        ctx.fill();
-      });
-
-      // Draw face mesh connections (simplified - key facial features)
-      const drawConnection = (idx1: number, idx2: number) => {
-        if (landmarks[idx1] && landmarks[idx2]) {
-          ctx.beginPath();
-          ctx.moveTo(landmarks[idx1].x, landmarks[idx1].y);
-          ctx.lineTo(landmarks[idx2].x, landmarks[idx2].y);
-          ctx.stroke();
-        }
-      };
-
-      // Draw face oval
-      const faceOval = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109];
-      for (let i = 0; i < faceOval.length - 1; i++) {
-        drawConnection(faceOval[i]!, faceOval[i + 1]!);
-      }
-
-      // Draw left eye
-      const leftEye = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
-      for (let i = 0; i < leftEye.length - 1; i++) {
-        drawConnection(leftEye[i]!, leftEye[i + 1]!);
-      }
-
-      // Draw right eye
-      const rightEye = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398];
-      for (let i = 0; i < rightEye.length - 1; i++) {
-        drawConnection(rightEye[i]!, rightEye[i + 1]!);
-      }
-
-      // Draw lips
-      const lips = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
-      for (let i = 0; i < lips.length - 1; i++) {
-        drawConnection(lips[i]!, lips[i + 1]!);
-      }
-
-      // Draw nose
-      drawConnection(1, 2);
-      drawConnection(2, 98);
-      drawConnection(98, 327);
+      ctx.strokeRect(displayX, displayY, displayW, displayH);
     }
 
     // Continue loop
     animationFrameRef.current = requestAnimationFrame(detectLandmarksLoop);
-  };
+  }, []);
 
   const startEmotionDetection = () => {
     if (emotionIntervalRef.current) {
