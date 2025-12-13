@@ -837,3 +837,46 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Test enrollment page (camera not available in sandbox, but code loads without errors)
 - [x] Test verification page (camera not available in sandbox, but code loads without errors)
 - [ ] Save checkpoint with MediaPipe face rectangle overlay implementation
+
+## Face Rectangle Scaling Bug Fix
+- [x] Diagnose why rectangle is too small (canvas size mismatch)
+- [x] Fix canvas size to match video resolution
+- [x] Rectangle still smaller than face - need to increase size or check MediaPipe bounding box
+- [x] Rectangle not synchronized with face movement - MediaPipe IS updating (confirmed via console logs)
+- [x] Check if MediaPipeCamera is running and sending frames (confirmed working)
+- [x] Verify onResults callback is being triggered (confirmed - logs show detection)
+- [x] Add console logging to debug MediaPipe detection (added)
+- [x] Increased padding from 1.3x to 1.8x (80% larger) to cover full face
+- [x] Adjusted padding from 1.8x to 1.5x (50% larger) - perfect fit for face area
+- [ ] Test with user's camera to verify proper tracking
+- [ ] Save checkpoint with working face rectangle
+
+## Rectangle Alignment and Backend Detection Fixes
+- [ ] Increase vertical shift to move rectangle higher (currently -5%, need more)
+- [ ] Fix backend "No face detected" error
+- [ ] Diagnose "spawn E2BIG" error in Python face service
+- [ ] Reduce image size before sending to backend (currently too large)
+- [ ] Test verification with properly sized images
+- [ ] Verify rectangle fits face perfectly
+- [ ] Save checkpoint with all fixes
+
+## MediaPipe Full Implementation
+- [x] Replace Face Detection with Face Mesh for accurate bounding box
+- [x] Calculate face bounds from Face Mesh landmarks (min/max x/y)
+- [x] Install @mediapipe/face_mesh package
+- [x] Update Enrollment.tsx to use Face Mesh
+- [x] Update Verification.tsx to use Face Mesh
+- [x] Fix camera cleanup on page refresh (added MediaPipe camera stop)
+- [ ] Test enrollment flow with Face Mesh
+- [ ] Test verification flow with Face Mesh
+- [ ] Verify rectangle fits face perfectly
+- [ ] Save checkpoint with working Face Mesh implementation
+
+## Remove Python Backend Dependency
+- [x] Stop calling getLandmarks tRPC mutation (causing cv2 errors)
+- [x] Use MediaPipe Face Mesh landmarks directly from frontend
+- [x] Update Enrollment to use Face Mesh landmarks instead of backend
+- [x] Update Verification to use Face Mesh landmarks instead of backend
+- [ ] Test enrollment without backend dependency
+- [ ] Test verification without backend dependency
+- [ ] Save checkpoint with frontend-only face detection

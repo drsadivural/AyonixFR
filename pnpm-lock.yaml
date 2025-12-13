@@ -37,6 +37,9 @@ importers:
       '@mediapipe/face_detection':
         specifier: ^0.4.1646425229
         version: 0.4.1646425229
+      '@mediapipe/face_mesh':
+        specifier: ^0.4.1633559619
+        version: 0.4.1633559619
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.1(@types/react@19.2.1))(@types/react@19.2.1)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -1135,6 +1138,9 @@ packages:
 
   '@mediapipe/face_detection@0.4.1646425229':
     resolution: {integrity: sha512-aeCN+fRAojv9ch3NXorP6r5tcGVLR3/gC1HmtqB0WEZBRXrdP6/3W/sGR0dHr1iT6ueiK95G9PVjbzFosf/hrg==}
+
+  '@mediapipe/face_mesh@0.4.1633559619':
+    resolution: {integrity: sha512-Vc8cdjxS5+O2gnjWH9KncYpUCVXT0h714KlWAsyqJvJbIgUJBqpppbIx8yWcAzBDxm/5cYSuBI5p5ySIPxzcEg==}
 
   '@medv/finder@4.0.2':
     resolution: {integrity: sha512-RraNY9SCcx4KZV0Dh6BEW6XEW2swkqYca74pkFFRw6hHItSHiy+O/xMnpbofjYbzXj0tSpBGthUF1hHTsr3vIQ==}
@@ -5928,6 +5934,8 @@ snapshots:
   '@mediapipe/camera_utils@0.3.1675466862': {}
 
   '@mediapipe/face_detection@0.4.1646425229': {}
+
+  '@mediapipe/face_mesh@0.4.1633559619': {}
 
   '@medv/finder@4.0.2': {}
 

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FaceDetection } from '@mediapipe/face_detection';
+import { FaceMesh } from '@mediapipe/face_mesh';
 import { Camera as MediaPipeCamera } from '@mediapipe/camera_utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +33,7 @@ export default function Verification() {
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const faceDetectionRef = useRef<FaceDetection | null>(null);
+  const faceMeshRef = useRef<FaceMesh | null>(null);
   const mediaPipeCameraRef = useRef<MediaPipeCamera | null>(null);
   const detectedFaceBoundsRef = useRef<{xCenter: number, yCenter: number, width: number, height: number} | null>(null);
   const [landmarksImageData, setLandmarksImageData] = useState<string | null>(null);
@@ -104,11 +104,14 @@ export default function Verification() {
     
     if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) return;
     
-    // Capture current frame
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    // Capture current frame at reduced resolution to avoid E2BIG error
+    // Backend can't handle full HD images - resize to max 640px width
+    const maxWidth = 640;
+    const scale = Math.min(1, maxWidth / video.videoWidth);
+    canvas.width = video.videoWidth * scale;
+    canvas.height = video.videoHeight * scale;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = canvas.toDataURL('image/jpeg', 0.7);
     
     try {
       // Fetch landmarks from backend using tRPC mutation
@@ -159,25 +162,46 @@ export default function Verification() {
         videoRef.current.onloadedmetadata = () => {
           if (videoRef.current) {
             videoRef.current.play().then(() => {
-              // Initialize MediaPipe Face Detection
-              if (!faceDetectionRef.current) {
-                faceDetectionRef.current = new FaceDetection({
-                  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`
+              // Initialize MediaPipe Face Mesh for accurate face bounds
+              if (!faceMeshRef.current) {
+                faceMeshRef.current = new FaceMesh({
+                  locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
                 });
-                faceDetectionRef.current.setOptions({
-                  model: 'short',
-                  minDetectionConfidence: 0.5
+                faceMeshRef.current.setOptions({
+                  maxNumFaces: 1,
+                  refineLandmarks: true,
+                  minDetectionConfidence: 0.5,
+                  minTrackingConfidence: 0.5
                 });
-                faceDetectionRef.current.onResults((results) => {
-                  if (results.detections && results.detections.length > 0) {
-                    const detection = results.detections[0];
-                    const box = detection.boundingBox;
+                faceMeshRef.current.onResults((results: any) => {
+                  if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                    const landmarks = results.multiFaceLandmarks[0];
+                    
+                    // Calculate bounding box from landmarks (min/max x/y)
+                    let minX = 1, minY = 1, maxX = 0, maxY = 0;
+                    landmarks.forEach((landmark: any) => {
+                      minX = Math.min(minX, landmark.x);
+                      minY = Math.min(minY, landmark.y);
+                      maxX = Math.max(maxX, landmark.x);
+                      maxY = Math.max(maxY, landmark.y);
+                    });
+                    
+                    const width = maxX - minX;
+                    const height = maxY - minY;
+                    const xCenter = minX + width / 2;
+                    const yCenter = minY + height / 2;
+                    
+                    // Add 10% padding for better visual fit
+                    const padding = 1.1;
+                    
                     detectedFaceBoundsRef.current = {
-                      xCenter: box.xCenter,
-                      yCenter: box.yCenter,
-                      width: box.width,
-                      height: box.height
+                      xCenter,
+                      yCenter,
+                      width: width * padding,
+                      height: height * padding
                     };
+                    
+                    console.log('[MediaPipe] Face mesh bounds:', detectedFaceBoundsRef.current);
                   } else {
                     detectedFaceBoundsRef.current = null;
                   }
@@ -185,11 +209,11 @@ export default function Verification() {
               }
               
               // Start MediaPipe camera
-              if (videoRef.current && faceDetectionRef.current) {
+              if (videoRef.current && faceMeshRef.current) {
                 mediaPipeCameraRef.current = new MediaPipeCamera(videoRef.current, {
                   onFrame: async () => {
-                    if (videoRef.current && faceDetectionRef.current) {
-                      await faceDetectionRef.current.send({ image: videoRef.current });
+                    if (videoRef.current && faceMeshRef.current) {
+                      await faceMeshRef.current.send({ image: videoRef.current });
                     }
                   },
                   width: 1280,
@@ -204,10 +228,8 @@ export default function Verification() {
               setIsVerifying(true);
               detectLandmarksLoop();
               
-              // Start fetching landmarks every 100ms
-              landmarkFetchIntervalRef.current = setInterval(() => {
-                fetchLandmarksFromVideo();
-              }, 100);
+              // MediaPipe Face Mesh provides landmarks directly in onResults
+              // No need for separate backend calls
             }).catch(err => {
               console.error('Error playing video:', err);
               toast.error('Failed to start video stream');
@@ -235,55 +257,32 @@ export default function Verification() {
       return;
     }
 
-    // Get display size and video size
-    const displayWidth = video.clientWidth;
-    const displayHeight = video.clientHeight;
     const videoWidth = video.videoWidth;
     const videoHeight = video.videoHeight;
     
-    // Set canvas to match display size
-    overlayCanvas.width = displayWidth;
-    overlayCanvas.height = displayHeight;
-
-    // Calculate letterbox offset for object-contain
-    const videoAspect = videoWidth / videoHeight;
-    const displayAspect = displayWidth / displayHeight;
-    
-    let scale, offsetX, offsetY;
-    if (displayAspect > videoAspect) {
-      // Letterbox on sides
-      scale = displayHeight / videoHeight;
-      offsetX = (displayWidth - videoWidth * scale) / 2;
-      offsetY = 0;
-    } else {
-      // Letterbox on top/bottom
-      scale = displayWidth / videoWidth;
-      offsetX = 0;
-      offsetY = (displayHeight - videoHeight * scale) / 2;
-    }
+    // Set canvas to match video resolution (not display size)
+    overlayCanvas.width = videoWidth;
+    overlayCanvas.height = videoHeight;
 
     // Clear previous drawings
-    ctx.clearRect(0, 0, displayWidth, displayHeight);
+    ctx.clearRect(0, 0, videoWidth, videoHeight);
 
     // Draw face rectangle from MediaPipe detection
     const faceBounds = detectedFaceBoundsRef.current;
     if (faceBounds) {
       // MediaPipe returns normalized coordinates (0-1)
+      // Convert to video pixel coordinates
       const x = faceBounds.xCenter * videoWidth;
       const y = faceBounds.yCenter * videoHeight;
       const w = faceBounds.width * videoWidth;
       const h = faceBounds.height * videoHeight;
       
-      // Apply scale and offset
-      const displayX = (x - w/2) * scale + offsetX;
-      const displayY = (y - h/2) * scale + offsetY;
-      const displayW = w * scale;
-      const displayH = h * scale;
+      console.log('[Canvas] Drawing rect at:', { x: x - w/2, y: y - h/2, w, h, videoWidth, videoHeight });
       
-      // Draw bounding box
+      // Draw bounding box (no scaling needed - canvas matches video resolution)
       ctx.strokeStyle = '#10b981'; // Green
-      ctx.lineWidth = 3;
-      ctx.strokeRect(displayX, displayY, displayW, displayH);
+      ctx.lineWidth = 5; // Thicker line for visibility
+      ctx.strokeRect(x - w/2, y - h/2, w, h);
     }
 
     // Continue loop
@@ -306,10 +305,23 @@ export default function Verification() {
   };
 
   const stopVerification = () => {
+    // Stop MediaPipe camera
+    if (mediaPipeCameraRef.current) {
+      mediaPipeCameraRef.current.stop();
+      mediaPipeCameraRef.current = null;
+    }
+    
+    // Stop video stream
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
+    
+    // Clear video element
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
