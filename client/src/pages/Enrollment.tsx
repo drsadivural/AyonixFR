@@ -16,6 +16,7 @@ import FaceQualityIndicator from '@/components/FaceQualityIndicator';
 import { speak } from '@/services/voiceAssistant';
 import { validatePhoto } from '@/services/photoValidation';
 import VoiceRecorder from '@/components/VoiceRecorder';
+import { extractFaceEmbedding } from '@/utils/faceEmbedding';
 
 type EnrollmentMethod = 'camera' | 'photo' | 'mobile';
 
@@ -50,6 +51,7 @@ export default function Enrollment() {
   const mediaPipeCameraRef = useRef<MediaPipeCamera | null>(null);
   const detectedFaceBoundsRef = useRef<{xCenter: number, yCenter: number, width: number, height: number} | null>(null);
   const landmarkFetchIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const currentLandmarksRef = useRef<Array<{x: number, y: number, z: number}> | null>(null);
 
   const [duplicateWarning, setDuplicateWarning] = useState<any[]>([]);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
@@ -160,8 +162,12 @@ export default function Enrollment() {
                     };
                     
                     console.log('[MediaPipe] Face mesh bounds:', detectedFaceBoundsRef.current);
+                    
+                    // Store landmarks for enrollment
+                    currentLandmarksRef.current = landmarks;
                   } else {
                     detectedFaceBoundsRef.current = null;
+                    currentLandmarksRef.current = null;
                   }
                 });
               }
@@ -392,9 +398,14 @@ export default function Enrollment() {
       }
     }
 
-    // First check for duplicates by extracting embedding
-    // For now, we'll skip duplicate check and proceed directly
-    // In production, you would extract embedding first, check duplicates, then enroll
+    // Extract face embedding from current landmarks
+    if (!currentLandmarksRef.current) {
+      toast.error('No face detected. Please ensure your face is visible in the camera.');
+      return;
+    }
+    
+    const faceEmbedding = extractFaceEmbedding(currentLandmarksRef.current);
+    console.log('[Enrollment] Extracted face embedding, length:', faceEmbedding.length);
     
     enrollMutation.mutate({
       name: formData.name,
@@ -404,6 +415,7 @@ export default function Enrollment() {
       address: formData.address,
       instagram: formData.instagram,
       imageBase64: capturedImage,
+      faceEmbedding,
       enrollmentMethod,
       voiceBase64,
     });

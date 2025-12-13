@@ -261,6 +261,7 @@ export const appRouter = router({
         address: z.string().optional(),
         instagram: z.string().optional(),
         imageBase64: z.string(),
+        faceEmbedding: z.array(z.number()), // Face embedding from MediaPipe Face Mesh
         enrollmentMethod: z.enum(['camera', 'photo', 'mobile']),
         voiceBase64: z.string().optional(), // Base64-encoded audio file
       }))
@@ -277,20 +278,15 @@ export const appRouter = router({
           });
         }
         
-        // Extract face embedding using Python service with MediaPipe
-        let faceEmbedding: number[];
-        try {
-          console.log('[Enrollment] Extracting face from image, size:', input.imageBase64.length, 'bytes');
-          console.log('[Enrollment] Image preview:', input.imageBase64.substring(0, 100));
-          faceEmbedding = await extractSingleFaceEmbedding(input.imageBase64);
-          console.log('[Enrollment] Successfully extracted face embedding, length:', faceEmbedding.length);
-        } catch (error: any) {
-          console.error('[Enrollment] Face extraction failed:', error.message);
+        // Validate face embedding from frontend
+        const faceEmbedding = input.faceEmbedding;
+        if (!faceEmbedding || faceEmbedding.length === 0) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: `Failed to detect face in image: ${error.message}`,
+            message: 'No face embedding provided',
           });
         }
+        console.log('[Enrollment] Received face embedding, length:', faceEmbedding.length);
 
         // Upload image to S3
         const base64Data = input.imageBase64.split(',')[1] || input.imageBase64;
@@ -480,6 +476,7 @@ export const appRouter = router({
     verify: protectedProcedure
       .input(z.object({
         imageBase64: z.string(),
+        faceEmbedding: z.array(z.number()), // Face embedding from MediaPipe Face Mesh
         cameraSource: z.string(),
         threshold: z.number().optional(),
       }))
@@ -492,16 +489,8 @@ export const appRouter = router({
           });
         }
         
-        // Extract face embeddings using Python service with MediaPipe
-        let faceEmbeddings: number[][];
-        try {
-          faceEmbeddings = await extractMultipleFaceEmbeddings(input.imageBase64);
-        } catch (error) {
-          console.error('Face extraction error:', error);
-          faceEmbeddings = [];
-        }
-
-        if (faceEmbeddings.length === 0) {
+        // Validate face embedding from frontend
+        if (!input.faceEmbedding || input.faceEmbedding.length === 0) {
           await db.createEvent({
             userId: 1, // System user
             eventType: 'no_match',
@@ -515,6 +504,8 @@ export const appRouter = router({
             matches: [],
           };
         }
+        
+        const faceEmbeddings = [input.faceEmbedding]; // Single face for now
 
         // Get all enrolled faces
         const enrollees = await db.getAllEnrollees();

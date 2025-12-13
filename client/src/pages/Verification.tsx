@@ -12,6 +12,7 @@ import { EmotionBadge } from '@/components/EmotionBadge';
 import { VoiceIndicator } from '@/components/VoiceIndicator';
 import { loadEmotionModels, detectEmotion, type EmotionResult } from '@/services/emotionDetection';
 import type { VoiceCommand } from '@/services/voiceRecognition';
+import { extractFaceEmbedding } from '@/utils/faceEmbedding';
 
 export default function Verification() {
   const [isVerifying, setIsVerifying] = useState(false);
@@ -36,6 +37,7 @@ export default function Verification() {
   const faceMeshRef = useRef<FaceMesh | null>(null);
   const mediaPipeCameraRef = useRef<MediaPipeCamera | null>(null);
   const detectedFaceBoundsRef = useRef<{xCenter: number, yCenter: number, width: number, height: number} | null>(null);
+  const currentLandmarksRef = useRef<Array<{x: number, y: number, z: number}> | null>(null);
   const [landmarksImageData, setLandmarksImageData] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number>(0);
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
@@ -202,8 +204,12 @@ export default function Verification() {
                     };
                     
                     console.log('[MediaPipe] Face mesh bounds:', detectedFaceBoundsRef.current);
+                    
+                    // Store landmarks for verification
+                    currentLandmarksRef.current = landmarks;
                   } else {
                     detectedFaceBoundsRef.current = null;
+                    currentLandmarksRef.current = null;
                   }
                 });
               }
@@ -358,9 +364,19 @@ export default function Verification() {
         // Get landmarks for visualization
         setLandmarksImageData(imageData);
         
-        // Face embeddings will be extracted by Python service on the backend
+        // Extract face embedding from current landmarks
+        if (!currentLandmarksRef.current) {
+          console.log('[Verification] No landmarks available for embedding extraction');
+          toast.error('No face detected');
+          return;
+        }
+        
+        const faceEmbedding = extractFaceEmbedding(currentLandmarksRef.current);
+        console.log('[Verification] Extracted face embedding, length:', faceEmbedding.length);
+        
         verifyMutation.mutate({
           imageBase64: imageData,
+          faceEmbedding,
           cameraSource,
           threshold: settings?.matchThreshold ? settings.matchThreshold / 100 : 0.75,
         });

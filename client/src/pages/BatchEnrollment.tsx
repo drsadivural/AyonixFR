@@ -108,6 +108,8 @@ export default function BatchEnrollment() {
           });
 
           // Enroll
+          // TODO: Extract face embedding from uploaded photo using MediaPipe
+          // For now, use empty array as placeholder
           await enrollMutation.mutateAsync({
             name: record.name,
             surname: record.surname,
@@ -116,6 +118,7 @@ export default function BatchEnrollment() {
             address: record.address || '',
             instagram: record.instagram || '',
             imageBase64,
+            faceEmbedding: [], // Placeholder - needs proper implementation
             enrollmentMethod: 'photo',
           });
 

@@ -70,6 +70,12 @@ export function findBestMatch(
   let bestMatch: { id: number; similarity: number; name: string; surname: string } | null = null;
   
   for (const stored of storedEmbeddings) {
+    // Skip if embedding lengths don't match (different face detection methods)
+    if (stored.embedding.length !== queryEmbedding.length) {
+      console.warn(`[FaceRecognition] Skipping enrollee ${stored.id}: embedding length mismatch (${stored.embedding.length} vs ${queryEmbedding.length})`);
+      continue;
+    }
+    
     // Use cosine similarity (higher is better)
     const similarity = cosineSimilarity(queryEmbedding, stored.embedding);
     
