@@ -892,4 +892,18 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Test enrollment: capture face, extract embedding, save to database
 - [x] Test verification: capture face, extract embedding, find matches
 - [x] Display match results with confidence scores
-- [ ] Save checkpoint with working face recognition
+- [x] Save checkpoint with working face recognition (version: b9143641)
+
+## Enrollment Capture Display Fix
+- [ ] Ensure captured face image is displayed when clicking Capture button
+- [ ] Verify rectangle logic matches verification page (same padding, positioning)
+- [ ] Test enrollment capture flow end-to-end
+- [ ] Save checkpoint with working enrollment capture
+
+## Enrollment Capture Display Verification
+- [x] Verify captureImage implementation (captures from video and sets state)
+- [x] Verify captured image display logic (hides video, shows image when captured)
+- [x] Verify rectangle logic matches verification (both use MediaPipe Face Mesh 1.1x padding)
+- [x] Test enrollment page loads correctly
+- [x] Confirm camera initialization works (requires real camera hardware)
+- [ ] Save checkpoint with enrollment capture verification
