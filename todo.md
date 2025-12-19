@@ -906,4 +906,11 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Verify rectangle logic matches verification (both use MediaPipe Face Mesh 1.1x padding)
 - [x] Test enrollment page loads correctly
 - [x] Confirm camera initialization works (requires real camera hardware)
-- [ ] Save checkpoint with enrollment capture verification
+- [x] Save checkpoint with enrollment capture verification (version: 273fa766)
+
+## Verification Device Timeout Fix
+- [x] Diagnose why verification is calling device API instead of using local camera (user running old local code)
+- [x] Check verification code for device API calls (no device API calls in Manus code)
+- [x] Verification correctly uses MediaPipe Face Mesh from local camera in Manus sandbox
+- [ ] User needs to update local code to match Manus version
+- [ ] Save checkpoint for user to download correct version
