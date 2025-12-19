@@ -1,0 +1,10 @@
+# Face Analytics Service Dependencies
+flask==3.0.0
+flask-cors==4.0.0
+insightface==0.7.3
+onnxruntime==1.16.3
+opencv-python-headless==4.8.1.78
+ultralytics==8.1.0
+numpy==1.24.3
+pillow==10.1.0
+scipy==1.11.4

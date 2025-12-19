@@ -912,5 +912,20 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [x] Diagnose why verification is calling device API instead of using local camera (user running old local code)
 - [x] Check verification code for device API calls (no device API calls in Manus code)
 - [x] Verification correctly uses MediaPipe Face Mesh from local camera in Manus sandbox
-- [ ] User needs to update local code to match Manus version
-- [ ] Save checkpoint for user to download correct version
+- [x] User needs to update local code to match Manus version
+- [x] Save checkpoint for user to download correct version (version: c4ff53e0)
+
+## InsightFace/ArcFace/YOLO Deployment Package
+- [x] Create Python backend service structure (Flask)
+- [x] Create face analytics service (InsightFace + ArcFace)
+- [x] Implement YOLO people counting service
+- [x] Create requirements.txt for Python dependencies
+- [x] Create Dockerfile for backend service
+- [x] Create Docker Compose configuration
+- [x] Create AWS EC2 deployment script
+- [x] Create deployment documentation (DEPLOYMENT.md)
+- [ ] Implement frontend API client for analytics
+- [ ] Add toggle controls UI (face analytics, people counting)
+- [ ] Display analytics above camera stream
+- [ ] Test Docker build locally
+- [ ] Save checkpoint with deployment package
