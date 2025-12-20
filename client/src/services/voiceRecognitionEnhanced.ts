@@ -57,8 +57,8 @@ export interface VoiceRecognitionConfig {
 
 // Japanese wake word alternatives
 const WAKE_WORDS: Record<string, string[]> = {
-  'en-US': ['ayonix', 'hey ayonix', 'ok ayonix'],
-  'ja-JP': ['アヨニクス', 'あよにくす', 'ayonix'], // Ayonikusu in Japanese
+  'en-US': ['atlas', 'hey atlas', 'ok atlas'],
+  'ja-JP': ['アトラス', 'あとらす', 'atlas'], // Atorasu in Japanese
 };
 
 export class VoiceRecognitionService {

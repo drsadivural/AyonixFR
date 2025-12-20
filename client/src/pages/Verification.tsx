@@ -10,6 +10,7 @@ import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { EmotionBadge } from '@/components/EmotionBadge';
 import { VoiceIndicator } from '@/components/VoiceIndicator';
+import { FaceAnalyticsDisplay } from '@/components/FaceAnalyticsDisplay';
 import { loadEmotionModels, detectEmotion, type EmotionResult } from '@/services/emotionDetection';
 import type { VoiceCommand } from '@/services/voiceRecognition';
 import { extractFaceEmbedding } from '@/utils/faceEmbedding';
@@ -42,6 +43,9 @@ export default function Verification() {
   const [confidence, setConfidence] = useState<number>(0);
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [faceAnalytics, setFaceAnalytics] = useState<any[]>([]);
+  const [peopleCount, setPeopleCount] = useState<number>(0);
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
 
   const { data: settings } = trpc.settings.get.useQuery();
 
@@ -52,6 +56,19 @@ export default function Verification() {
       toast.error('Emotion detection unavailable');
     });
   }, []);
+
+  const analyzeFaceMutation = trpc.faceAnalytics.analyzeFace.useMutation({
+    onSuccess: (data) => {
+      if (data.success && data.faces) {
+        setFaceAnalytics(data.faces);
+        console.log('[Analytics] Face analytics:', data.faces);
+      }
+    },
+    onError: (error) => {
+      console.error('[Analytics] Failed:', error.message);
+      // Don't show error toast - analytics is optional
+    },
+  });
 
   const verifyMutation = trpc.verification.verify.useMutation({
     onSuccess: (data) => {
@@ -380,6 +397,11 @@ export default function Verification() {
           cameraSource,
           threshold: settings?.matchThreshold ? settings.matchThreshold / 100 : 0.75,
         });
+        
+        // Call face analytics if enabled
+        if (analyticsEnabled) {
+          analyzeFaceMutation.mutate({ imageBase64: imageData });
+        }
       }
     }
   };
@@ -691,6 +713,23 @@ export default function Verification() {
             )}
           </CardContent>
         </Card>
+
+        {/* Face Analytics Section */}
+        {analyticsEnabled && faceAnalytics.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Face Analytics</CardTitle>
+              <CardDescription>Demographic and expression analysis</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FaceAnalyticsDisplay 
+                faces={faceAnalytics}
+                peopleCount={peopleCount}
+                showPeopleCount={false}
+              />
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Voice Comments Chat Panel */}

@@ -42,6 +42,12 @@ export default function Settings() {
     faceTrackingSmoothing: number;
     multiFaceMatch: boolean;
     databaseStorageLocation: string;
+    analyticsEnabled: boolean;
+    ageDetectionEnabled: boolean;
+    genderDetectionEnabled: boolean;
+    expressionDetectionEnabled: boolean;
+    raceDetectionEnabled: boolean;
+    peopleCountingEnabled: boolean;
   }>({
     // LLM Settings
     llmProvider: 'openai',
@@ -65,6 +71,12 @@ export default function Settings() {
     faceTrackingSmoothing: 50,
     multiFaceMatch: true,
     databaseStorageLocation: '/var/lib/ayonix/faces',
+    analyticsEnabled: true,
+    ageDetectionEnabled: true,
+    genderDetectionEnabled: true,
+    expressionDetectionEnabled: true,
+    raceDetectionEnabled: false,
+    peopleCountingEnabled: true,
   });
 
   useEffect(() => {
@@ -87,6 +99,12 @@ export default function Settings() {
         faceTrackingSmoothing: settings.faceTrackingSmoothing || 50,
         multiFaceMatch: settings.multiFaceMatch ?? true,
         databaseStorageLocation: (settings as any).databaseStorageLocation || '/var/lib/ayonix/faces',
+        analyticsEnabled: (settings as any).analyticsEnabled ?? true,
+        ageDetectionEnabled: (settings as any).ageDetectionEnabled ?? true,
+        genderDetectionEnabled: (settings as any).genderDetectionEnabled ?? true,
+        expressionDetectionEnabled: (settings as any).expressionDetectionEnabled ?? true,
+        raceDetectionEnabled: (settings as any).raceDetectionEnabled ?? false,
+        peopleCountingEnabled: (settings as any).peopleCountingEnabled ?? true,
       });
     }
   }, [settings]);
@@ -368,6 +386,111 @@ export default function Settings() {
                   checked={formData.multiFaceMatch}
                   onCheckedChange={(checked) => setFormData({ ...formData, multiFaceMatch: checked })}
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Face Analytics Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Face Analytics</CardTitle>
+              <CardDescription>Configure demographic and expression detection features</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="analytics-enabled">Enable Face Analytics</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Master toggle for all analytics features
+                  </p>
+                </div>
+                <Switch
+                  id="analytics-enabled"
+                  checked={formData.analyticsEnabled}
+                  onCheckedChange={(checked) => setFormData({ ...formData, analyticsEnabled: checked })}
+                />
+              </div>
+
+              <div className="border-t pt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="age-detection">Age Detection</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Estimate age from facial features
+                    </p>
+                  </div>
+                  <Switch
+                    id="age-detection"
+                    checked={formData.ageDetectionEnabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, ageDetectionEnabled: checked })}
+                    disabled={!formData.analyticsEnabled}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="gender-detection">Gender Detection</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Identify gender from facial features
+                    </p>
+                  </div>
+                  <Switch
+                    id="gender-detection"
+                    checked={formData.genderDetectionEnabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, genderDetectionEnabled: checked })}
+                    disabled={!formData.analyticsEnabled}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="expression-detection">Expression Detection</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Detect facial expressions and emotions
+                    </p>
+                  </div>
+                  <Switch
+                    id="expression-detection"
+                    checked={formData.expressionDetectionEnabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, expressionDetectionEnabled: checked })}
+                    disabled={!formData.analyticsEnabled}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="race-detection">Race/Ethnicity Detection</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Estimate ethnicity (disabled by default for privacy)
+                    </p>
+                  </div>
+                  <Switch
+                    id="race-detection"
+                    checked={formData.raceDetectionEnabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, raceDetectionEnabled: checked })}
+                    disabled={!formData.analyticsEnabled}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="people-counting">People Counting</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Count total people in frame using YOLO
+                    </p>
+                  </div>
+                  <Switch
+                    id="people-counting"
+                    checked={formData.peopleCountingEnabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, peopleCountingEnabled: checked })}
+                    disabled={!formData.analyticsEnabled}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-xs text-yellow-800">
+                <strong>Privacy Note:</strong> Analytics data is processed locally and not stored permanently. 
+                Race/ethnicity detection is disabled by default due to ethical considerations.
               </div>
             </CardContent>
           </Card>

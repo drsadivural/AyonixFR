@@ -977,3 +977,23 @@ Note: Voice biometric matching requires specialized audio processing libraries a
 - [ ] Save checkpoint with all features
 - [ ] Create comprehensive release notes
 - [ ] Deliver final system to user
+
+
+## New User Requests (Current Sprint)
+- [x] Change wake word from "Ayonix" to "ATLAS" in all components
+- [x] Update Japanese wake word alternatives for ATLAS
+- [x] Integrate FaceAnalyticsDisplay into Verification page
+- [x] Add real-time analytics updates during verification
+- [x] Create analytics toggle controls in Settings page
+- [x] Add toggle for age detection
+- [x] Add toggle for gender detection
+- [x] Add toggle for expression detection
+- [x] Add toggle for race/ethnicity detection
+- [x] Add toggle for people counting
+- [x] Implement voice identification system
+- [x] Add speaker recognition using voice embeddings
+- [x] Store voice profiles for enrolled users
+- [x] Display speaker identity in voice assistant UI
+- [ ] Test ATLAS wake word with both languages
+- [ ] Test analytics toggles functionality
+- [ ] Test voice identification accuracy

@@ -6,7 +6,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { useLocation } from 'wouter';
-import { VoiceRecognitionService, TextToSpeechService } from '../services/voiceRecognitionEnhanced';
+import { VoiceRecognitionService, TextToSpeechService } from '@/services/voiceRecognitionEnhanced';
+import { getVoiceIdentificationService, type VoiceIdentificationResult } from '@/services/voiceIdentification';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { toast } from 'sonner';
@@ -17,15 +18,17 @@ export function GlobalVoiceAssistantEnhanced() {
   const [lastCommand, setLastCommand] = useState<string>('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [language, setLanguage] = useState<'en-US' | 'ja-JP'>('en-US');
+  const [speakerIdentity, setSpeakerIdentity] = useState<VoiceIdentificationResult | null>(null);
   const [location, setLocation] = useLocation();
   
   const voiceServiceRef = useRef<VoiceRecognitionService | null>(null);
   const ttsServiceRef = useRef<TextToSpeechService | null>(null);
+  const voiceIdServiceRef = useRef(getVoiceIdentificationService());
 
   useEffect(() => {
     // Initialize services
     voiceServiceRef.current = new VoiceRecognitionService({
-      wakeWord: 'ayonix',
+      wakeWord: 'atlas',
       language: language,
       continuous: true,
       interimResults: true,
@@ -193,7 +196,7 @@ export function GlobalVoiceAssistantEnhanced() {
       voiceServiceRef.current?.start();
       setIsListening(true);
       setIsWaitingForWakeWord(true);
-      toast.success('Voice assistant started. Say "Ayonix" to activate.');
+      toast.success('Voice assistant started. Say "ATLAS" to activate.');
     }
   };
 
@@ -201,13 +204,21 @@ export function GlobalVoiceAssistantEnhanced() {
     <div className="fixed bottom-6 right-6 z-50">
       <Card className="p-4 shadow-lg bg-white/95 backdrop-blur-sm">
         <div className="flex flex-col gap-3">
+          {/* Speaker Identity */}
+          {speakerIdentity && speakerIdentity.isIdentified && (
+            <div className="flex items-center gap-2 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+              <span className="font-semibold">{speakerIdentity.userName}</span>
+              <span className="text-blue-500">({(speakerIdentity.confidence * 100).toFixed(0)}%)</span>
+            </div>
+          )}
+
           {/* Status indicator */}
           <div className="flex items-center gap-2 text-sm">
             {isListening ? (
               isWaitingForWakeWord ? (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                  <span className="text-gray-700">Listening for "Ayonix"...</span>
+                  <span className="text-gray-700">Listening for "ATLAS"...</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -283,7 +294,7 @@ export function GlobalVoiceAssistantEnhanced() {
 
           {/* Help text */}
           <div className="text-xs text-gray-500 text-center">
-            {language === 'ja-JP' ? '「アヨニクス」と言ってからコマンドを話してください' : 'Say "Ayonix" then your command'}
+            {language === 'ja-JP' ? '「アトラス」と言ってからコマンドを話してください' : 'Say "ATLAS" then your command'}
           </div>
         </div>
       </Card>
