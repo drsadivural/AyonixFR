@@ -17,9 +17,11 @@ import { hasPermission, requireAdmin, type UserRole } from './permissions';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from './_core/env';
+import { faceAnalyticsRouter } from './faceAnalyticsRouter';
 
 export const appRouter = router({
   system: systemRouter,
+  faceAnalytics: faceAnalyticsRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

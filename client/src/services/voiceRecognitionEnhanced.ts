@@ -50,10 +50,16 @@ export interface VoiceCommand {
 
 export interface VoiceRecognitionConfig {
   wakeWord: string;
-  language: string;
+  language: 'en-US' | 'ja-JP';
   continuous: boolean;
   interimResults: boolean;
 }
+
+// Japanese wake word alternatives
+const WAKE_WORDS: Record<string, string[]> = {
+  'en-US': ['ayonix', 'hey ayonix', 'ok ayonix'],
+  'ja-JP': ['アヨニクス', 'あよにくす', 'ayonix'], // Ayonikusu in Japanese
+};
 
 export class VoiceRecognitionService {
   private recognition: SpeechRecognition | null = null;
@@ -101,9 +107,11 @@ export class VoiceRecognitionService {
 
       console.log('[Voice] Recognized:', transcript, 'Confidence:', confidence);
 
-      // Check for wake word
+      // Check for wake word (support multiple variations)
       if (this.isWaitingForWakeWord) {
-        if (transcript.includes(this.config.wakeWord.toLowerCase())) {
+        const wakeWords = WAKE_WORDS[this.config.language] || [this.config.wakeWord];
+        const hasWakeWord = wakeWords.some(word => transcript.includes(word.toLowerCase()));
+        if (hasWakeWord) {
           console.log('[Voice] Wake word detected!');
           this.isWaitingForWakeWord = false;
           if (this.onWakeWordCallback) {
@@ -263,16 +271,16 @@ export class TextToSpeechService {
     rate: number;
     pitch: number;
     volume: number;
-    lang: string;
+    lang: 'en-US' | 'ja-JP';
   };
 
-  constructor() {
+  constructor(language: 'en-US' | 'ja-JP' = 'en-US') {
     this.synth = window.speechSynthesis;
     this.config = {
       rate: 1.0,
       pitch: 1.0,
       volume: 1.0,
-      lang: 'en-US',
+      lang: language,
     };
 
     // Load voices
@@ -284,15 +292,20 @@ export class TextToSpeechService {
 
     const voices = this.synth.getVoices();
     if (voices.length > 0) {
-      // Prefer English voice
-      this.voice = voices.find(v => v.lang.startsWith('en')) || voices[0];
+      this.selectVoiceForLanguage(voices);
     }
 
     // Chrome loads voices asynchronously
     this.synth.onvoiceschanged = () => {
       const voices = this.synth!.getVoices();
-      this.voice = voices.find(v => v.lang.startsWith('en')) || voices[0];
+      this.selectVoiceForLanguage(voices);
     };
+  }
+
+  private selectVoiceForLanguage(voices: SpeechSynthesisVoice[]) {
+    const langPrefix = this.config.lang.split('-')[0]; // 'en' or 'ja'
+    this.voice = voices.find(v => v.lang.startsWith(langPrefix)) || voices[0];
+    console.log('[TTS] Selected voice:', this.voice?.name, 'for language:', this.config.lang);
   }
 
   /**

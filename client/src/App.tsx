@@ -19,7 +19,7 @@ import UserManagement from "@/pages/UserManagement";
 import VoiceSettings from "@/pages/VoiceSettings";
 import APIKeysSettings from "@/pages/APIKeysSettings";
 import ChatAssistant from "@/components/ChatAssistant";
-import { GlobalVoiceAssistant } from "@/components/GlobalVoiceAssistant";
+import { GlobalVoiceAssistantEnhanced } from "@/components/GlobalVoiceAssistantEnhanced";
 import { VoiceOnboardingTutorial, useVoiceTutorial } from "@/components/VoiceOnboardingTutorial";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -84,7 +84,7 @@ function AuthenticatedApp() {
         </main>
         <ChatAssistant />
       </div>
-      <GlobalVoiceAssistant />
+      <GlobalVoiceAssistantEnhanced />
       {showTutorial && (
         <VoiceOnboardingTutorial
           onComplete={handleComplete}

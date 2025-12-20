@@ -16,6 +16,7 @@ export function GlobalVoiceAssistantEnhanced() {
   const [isWaitingForWakeWord, setIsWaitingForWakeWord] = useState(true);
   const [lastCommand, setLastCommand] = useState<string>('');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [language, setLanguage] = useState<'en-US' | 'ja-JP'>('en-US');
   const [location, setLocation] = useLocation();
   
   const voiceServiceRef = useRef<VoiceRecognitionService | null>(null);
@@ -25,12 +26,12 @@ export function GlobalVoiceAssistantEnhanced() {
     // Initialize services
     voiceServiceRef.current = new VoiceRecognitionService({
       wakeWord: 'ayonix',
-      language: 'en-US',
+      language: language,
       continuous: true,
       interimResults: true,
     });
 
-    ttsServiceRef.current = new TextToSpeechService();
+    ttsServiceRef.current = new TextToSpeechService(language);
 
     // Set up callbacks
     voiceServiceRef.current.onWakeWord(() => {
@@ -62,7 +63,7 @@ export function GlobalVoiceAssistantEnhanced() {
     return () => {
       voiceServiceRef.current?.stop();
     };
-  }, []);
+  }, [language]);
 
   const speak = (text: string) => {
     setIsSpeaking(true);
@@ -73,95 +74,113 @@ export function GlobalVoiceAssistantEnhanced() {
   const processVoiceCommand = (transcript: string) => {
     const lower = transcript.toLowerCase().trim();
 
-    // Navigation commands
-    if (lower.includes('dashboard') || lower.includes('home')) {
+    // Japanese command translations
+    const isJapanese = language === 'ja-JP';
+    const responses = {
+      dashboard: isJapanese ? 'ダッシュボードを開きます' : 'Opening dashboard',
+      enrollment: isJapanese ? '登録ページを開きます' : 'Opening enrollment page',
+      verification: isJapanese ? '認証ページを開きます' : 'Opening verification page',
+      enrollees: isJapanese ? '登録者リストを開きます' : 'Opening enrollees list',
+      events: isJapanese ? 'イベントページを開きます' : 'Opening events page',
+      settings: isJapanese ? '設定を開きます' : 'Opening settings',
+      startCamera: isJapanese ? 'カメラを起動します' : 'Starting camera for enrollment',
+      capture: isJapanese ? '写真を撮影します' : 'Capturing photo',
+      startVerification: isJapanese ? '認証を開始します' : 'Starting verification',
+      goToEnrollment: isJapanese ? '登録ページに移動してください' : 'Please go to enrollment page first',
+      checkDashboard: isJapanese ? 'ダッシュボードで統計を確認してください' : 'Please check the dashboard for statistics',
+      help: isJapanese ? 'ダッシュボードへ移動、登録開始、顔認証、登録者表示、設定を開くなどのコマンドが使えます' : 'You can say commands like: go to dashboard, start enrollment, verify face, show enrollees, or open settings',
+      unknown: isJapanese ? 'コマンドが理解できませんでした。ヘルプと言ってください' : 'Sorry, I did not understand that command. Say help for available commands',
+    };
+
+    // Navigation commands (English and Japanese)
+    if (lower.includes('dashboard') || lower.includes('home') || lower.includes('ダッシュボード') || lower.includes('ホーム')) {
       setLocation('/dashboard');
-      speak('Opening dashboard');
+      speak(responses.dashboard);
       return;
     }
 
-    if (lower.includes('enrollment') || lower.includes('enroll')) {
+    if (lower.includes('enrollment') || lower.includes('enroll') || lower.includes('登録') || lower.includes('とうろく')) {
       setLocation('/enrollment');
-      speak('Opening enrollment page');
+      speak(responses.enrollment);
       return;
     }
 
-    if (lower.includes('verification') || lower.includes('verify')) {
+    if (lower.includes('verification') || lower.includes('verify') || lower.includes('認証') || lower.includes('にんしょう') || lower.includes('確認')) {
       setLocation('/verification');
-      speak('Opening verification page');
+      speak(responses.verification);
       return;
     }
 
-    if (lower.includes('enrollees') || lower.includes('people') || lower.includes('list')) {
+    if (lower.includes('enrollees') || lower.includes('people') || lower.includes('list') || lower.includes('登録者') || lower.includes('リスト')) {
       setLocation('/enrollees');
-      speak('Opening enrollees list');
+      speak(responses.enrollees);
       return;
     }
 
-    if (lower.includes('events') || lower.includes('history') || lower.includes('log')) {
+    if (lower.includes('events') || lower.includes('history') || lower.includes('log') || lower.includes('イベント') || lower.includes('履歴')) {
       setLocation('/events');
-      speak('Opening events page');
+      speak(responses.events);
       return;
     }
 
-    if (lower.includes('settings') || lower.includes('configuration')) {
+    if (lower.includes('settings') || lower.includes('configuration') || lower.includes('設定') || lower.includes('せってい')) {
       setLocation('/settings');
-      speak('Opening settings');
+      speak(responses.settings);
       return;
     }
 
     // Action commands (page-specific)
-    if (lower.includes('start camera') || lower.includes('begin enrollment')) {
+    if (lower.includes('start camera') || lower.includes('begin enrollment') || lower.includes('カメラ') || lower.includes('かめら')) {
       if (location === '/enrollment') {
-        speak('Starting camera for enrollment');
+        speak(responses.startCamera);
         // Trigger enrollment start via localStorage flag
         localStorage.setItem('voice_action', 'start_enrollment');
         window.dispatchEvent(new Event('storage'));
       } else {
         setLocation('/enrollment');
-        speak('Opening enrollment page');
+        speak(responses.enrollment);
       }
       return;
     }
 
-    if (lower.includes('capture') || lower.includes('take photo')) {
+    if (lower.includes('capture') || lower.includes('take photo') || lower.includes('撮影') || lower.includes('さつえい')) {
       if (location === '/enrollment') {
-        speak('Capturing photo');
+        speak(responses.capture);
         localStorage.setItem('voice_action', 'capture_photo');
         window.dispatchEvent(new Event('storage'));
       } else {
-        speak('Please go to enrollment page first');
+        speak(responses.goToEnrollment);
       }
       return;
     }
 
-    if (lower.includes('start verification') || lower.includes('begin verification')) {
+    if (lower.includes('start verification') || lower.includes('begin verification') || lower.includes('認証開始') || lower.includes('確認開始')) {
       if (location === '/verification') {
-        speak('Starting verification');
+        speak(responses.startVerification);
         localStorage.setItem('voice_action', 'start_verification');
         window.dispatchEvent(new Event('storage'));
       } else {
         setLocation('/verification');
-        speak('Opening verification page');
+        speak(responses.verification);
       }
       return;
     }
 
     // Query commands
-    if (lower.includes('how many') || lower.includes('count')) {
-      speak('Please check the dashboard for statistics');
+    if (lower.includes('how many') || lower.includes('count') || lower.includes('何人') || lower.includes('統計')) {
+      speak(responses.checkDashboard);
       setLocation('/dashboard');
       return;
     }
 
-    if (lower.includes('help') || lower.includes('what can')) {
-      speak('You can say commands like: go to dashboard, start enrollment, verify face, show enrollees, or open settings');
+    if (lower.includes('help') || lower.includes('what can') || lower.includes('ヘルプ') || lower.includes('へるぷ')) {
+      speak(responses.help);
       return;
     }
 
     // Unknown command
-    speak('Sorry, I did not understand that command. Say help for available commands.');
-    toast.info('Unknown command. Say "help" for available commands.');
+    speak(responses.unknown);
+    toast.info(isJapanese ? 'コマンドが認識できません。「ヘルプ」と言ってください' : 'Unknown command. Say "help" for available commands.');
   };
 
   const toggleListening = () => {
@@ -239,9 +258,32 @@ export function GlobalVoiceAssistantEnhanced() {
             )}
           </Button>
 
+          {/* Language switcher */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-gray-500">Language:</span>
+            <div className="flex gap-1">
+              <Button
+                onClick={() => setLanguage('en-US')}
+                variant={language === 'en-US' ? 'default' : 'outline'}
+                size="sm"
+                className="text-xs px-2 py-1 h-auto"
+              >
+                EN
+              </Button>
+              <Button
+                onClick={() => setLanguage('ja-JP')}
+                variant={language === 'ja-JP' ? 'default' : 'outline'}
+                size="sm"
+                className="text-xs px-2 py-1 h-auto"
+              >
+                JP
+              </Button>
+            </div>
+          </div>
+
           {/* Help text */}
           <div className="text-xs text-gray-500 text-center">
-            Say "Ayonix" then your command
+            {language === 'ja-JP' ? '「アヨニクス」と言ってからコマンドを話してください' : 'Say "Ayonix" then your command'}
           </div>
         </div>
       </Card>
