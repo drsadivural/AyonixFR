@@ -7,6 +7,7 @@ export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   openId: varchar("openId", { length: 64 }).unique(), // Optional for OAuth users
   name: text("name").notNull(),
+  surname: varchar("surname", { length: 255 }),
   email: varchar("email", { length: 320 }).notNull().unique(),
   password: varchar("password", { length: 255 }), // Hashed password for email/password auth
   loginMethod: varchar("loginMethod", { length: 64 }).default("email").notNull(),

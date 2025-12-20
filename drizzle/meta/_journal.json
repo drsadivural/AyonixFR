@@ -92,6 +92,13 @@
       "when": 1765432928549,
       "tag": "0012_unknown_warpath",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1766190007901,
+      "tag": "0013_sturdy_taskmaster",
+      "breakpoints": true
     }
   ]
 }
